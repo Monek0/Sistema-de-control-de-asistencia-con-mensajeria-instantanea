@@ -1,5 +1,5 @@
 export const login = async (rutUsername, contraseña) => {
-    const response = await fetch('http://localhost:3000/auth/login', {
+    const response = await fetch('https://dr6mlrzheooq5qgtd2b3nddala0cwyxg.lambda-url.us-east-2.on.aws/auth/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -18,7 +18,7 @@ export const login = async (rutUsername, contraseña) => {
 
 export const register = async ({ nombreUsuario, rutUsername, contraseña, codRol }) => {
     try {
-        const response = await fetch('http://localhost:3000/auth/register', {
+        const response = await fetch('https://dr6mlrzheooq5qgtd2b3nddala0cwyxg.lambda-url.us-east-2.on.aws/auth/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
