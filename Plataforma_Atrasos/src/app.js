@@ -1,9 +1,9 @@
-// src/app.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const bodyParser = require('express').json;
+const serverless = require('@vendia/serverless-express'); // Librería para AWS Lambda
 
 // Rutas
 const authRoutes = require('./routes/authRoutes');
@@ -28,4 +28,5 @@ app.use('/api', atrasosRoutes);
 app.use('/api', justificativoRoutes);
 app.use('/pdfs', express.static(path.join(__dirname, 'pdfs')));
 
-module.exports = app;
+// Exportar la aplicación para AWS Lambda
+module.exports.handler = serverless({ app });
