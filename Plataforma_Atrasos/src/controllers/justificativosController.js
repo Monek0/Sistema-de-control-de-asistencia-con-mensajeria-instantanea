@@ -1,24 +1,26 @@
 // justificativosController.js
-const db = require('../config/db');
+const pool = require('../config/db');
 
 // Verificar justificativo de residencia de un alumno y devolver su nombre
-exports.verificarJustificativos = (req, res) => {
+exports.verificarJustificativos = async (req, res) => {
     const { rut } = req.params;
-    const query = 'SELECT NOMBRE_ALUMNO, JUSTIFICATIVO_RESIDENCIA, JUSTIFICATIVO_DEPORTIVO, JUSTIFICATIVO_MEDICO FROM ALUMNOS WHERE RUT_ALUMNO = ?';
+    const query = 'SELECT nombre_alumno, justificativo_residencia, justificativo_deportivo, justificativo_medico FROM alumnos WHERE rut_alumno = $1';
 
-    db.query(query, [rut], (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: 'Error al consultar justificativo de residencia' });
-        }
-        if (results.length > 0) {
+    try {
+        const result = await pool.query(query, [rut]);
+        
+        if (result.rows.length > 0) {
             return res.status(200).json({
-                justificativo_residencia: results[0].JUSTIFICATIVO_RESIDENCIA,
-                justificativo_deportivo: results[0].JUSTIFICATIVO_DEPORTIVO,
-                justificativo_medico: results[0].JUSTIFICATIVO_MEDICO,
-                NOMBRE_ALUMNO: results[0].NOMBRE_ALUMNO // Añadir el nombre del alumno
+                justificativo_residencia: result.rows[0].justificativo_residencia,
+                justificativo_deportivo: result.rows[0].justificativo_deportivo,
+                justificativo_medico: result.rows[0].justificativo_medico,
+                nombre_alumno: result.rows[0].nombre_alumno
             });
         } else {
             return res.status(404).json({ error: 'Alumno no encontrado' });
         }
-    });
+    } catch (error) {
+        console.error('Error al consultar justificativos:', error);
+        return res.status(500).json({ error: 'Error al consultar justificativos' });
+    }
 };

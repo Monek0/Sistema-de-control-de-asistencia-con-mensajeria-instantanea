@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const pool = require('../config/db');
 const pdfController = require('./PDFController');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const QRCode = require('qrcode-terminal');
@@ -101,29 +101,33 @@ const generateBaucher = (data) => {
 };
 
 // Obtener todos los atrasos
-exports.getAllAtrasos = (req, res) => {
+exports.getAllAtrasos = async (req, res) => {
     const query = `
-        SELECT A.RUT_ALUMNO, A.FECHA_ATRASOS, A.JUSTIFICATIVO, A.pdf_path,
-               CONCAT(B.NOMBRE_ALUMNO, ' ', B.SEGUNDO_NOMBRE_ALUMNO, ' ', B.APELLIDO_PATERNO_ALUMNO, ' ', B.APELLIDO_MATERNO_ALUMNO) AS NOMBRE_COMPLETO, 
-               C.NOMBRE_CURSO,
+        SELECT a.rut_alumno, a.fecha_atrasos, a.justificativo, a.pdf_path,
+               CONCAT(b.nombre_alumno, ' ', b.segundo_nombre_alumno, ' ', b.apellido_paterno_alumno, ' ', b.apellido_materno_alumno) AS nombre_completo, 
+               c.nombre_curso,
                CASE
-                   WHEN A.JUSTIFICATIVO = 0 THEN 'Sin justificativo'
-                   WHEN B.JUSTIFICATIVO_RESIDENCIA = 1 THEN 'Residencial'
-                   WHEN B.JUSTIFICATIVO_MEDICO = 1 THEN 'Medico'
-                   WHEN B.JUSTIFICATIVO_DEPORTIVO = 1 THEN 'Deportivo'
+                   WHEN a.justificativo = false THEN 'Sin justificativo'
+                   WHEN b.justificativo_residencia = true THEN 'Residencial'
+                   WHEN b.justificativo_medico = true THEN 'Medico'
+                   WHEN b.justificativo_deportivo = true THEN 'Deportivo'
                    ELSE 'Sin justificativo'
-               END AS TIPO_JUSTIFICATIVO
-        FROM ATRASOS A
-        JOIN ALUMNOS B ON A.RUT_ALUMNO = B.RUT_ALUMNO
-        JOIN CURSOS C ON B.COD_CURSO = C.COD_CURSO
-        GROUP BY A.COD_ATRASOS
+               END AS tipo_justificativo
+        FROM atrasos a
+        JOIN alumnos b ON a.rut_alumno = b.rut_alumno
+        JOIN cursos c ON b.cod_curso = c.cod_curso
+        GROUP BY a.cod_atrasos, a.rut_alumno, a.fecha_atrasos, a.justificativo, a.pdf_path, 
+                 b.nombre_alumno, b.segundo_nombre_alumno, b.apellido_paterno_alumno, b.apellido_materno_alumno,
+                 c.nombre_curso, b.justificativo_residencia, b.justificativo_medico, b.justificativo_deportivo
     `;
-    db.query(query, (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: 'Error al obtener los atrasos' });
-        }
-        res.status(200).json(results);
-    });
+    
+    try {
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener los atrasos:', error);
+        return res.status(500).json({ error: 'Error al obtener los atrasos' });
+    }
 };
 
 // Registrar un nuevo atraso
@@ -135,95 +139,75 @@ exports.createAtraso = async (req, res) => {
         return res.status(400).json({ error: 'Datos faltantes en la solicitud' });
     }
 
-    const checkRutQuery = 'SELECT * FROM ALUMNOS WHERE RUT_ALUMNO = ?';
-
-    db.query(checkRutQuery, [rutAlumno], async (checkError, checkResults) => {
-        if (checkError) {
-            return res.status(500).json({ error: 'Error al verificar el RUT del alumno' });
-        }
-
-        if (checkResults.length === 0) {
+    try {
+        // Verificar si el alumno existe
+        const checkRutResult = await pool.query('SELECT * FROM alumnos WHERE rut_alumno = $1', [rutAlumno]);
+        
+        if (checkRutResult.rows.length === 0) {
             return res.status(404).json({ error: 'El RUT del alumno no existe en la base de datos' });
         }
 
-        const alumno = checkResults[0];
-        const cursoQuery = 'SELECT NOMBRE_CURSO FROM CURSOS WHERE COD_CURSO = ?';
+        const alumno = checkRutResult.rows[0];
+        
+        // Obtener el curso del alumno
+        const cursoResult = await pool.query('SELECT nombre_curso FROM cursos WHERE cod_curso = $1', [alumno.cod_curso]);
+        const curso = cursoResult.rows[0]?.nombre_curso || 'Curso desconocido';
 
-        db.query(cursoQuery, [alumno.COD_CURSO], async (cursoError, cursoResults) => {
-            if (cursoError) {
-                return res.status(500).json({ error: 'Error al obtener el curso del alumno' });
+        // Insertar el atraso
+        const insertResult = await pool.query(
+            'INSERT INTO atrasos (rut_alumno, fecha_atrasos, justificativo, tipo_justificativo) VALUES ($1, $2, false, $3) RETURNING cod_atrasos',
+            [rutAlumno, fechaAtrasos, 'Sin justificativo']
+        );
+        
+        const codAtraso = insertResult.rows[0].cod_atrasos;
+
+        try {
+            const pdfPath = await pdfController.fillForm(rutAlumno, fechaAtrasos);
+            const pdfFileName = pdfPath.split('/').pop();
+            console.log('Nombre del PDF generado:', pdfFileName);
+
+            // Actualizar la ruta del PDF en la base de datos
+            await pool.query('UPDATE atrasos SET pdf_path = $1 WHERE cod_atrasos = $2', [pdfFileName, codAtraso]);
+            console.log('Ruta del PDF actualizada correctamente en la base de datos.');
+
+            // Obtener el número de celular del apoderado
+            const celularResult = await pool.query('SELECT n_celular_apoderado FROM alumnos WHERE rut_alumno = $1', [rutAlumno]);
+            const celularApoderado = celularResult.rows[0]?.n_celular_apoderado;
+            
+            if (celularApoderado) {
+                await sendPDF(celularApoderado, pdfPath);
+            } else {
+                console.error('Error: No se encontró el número de celular del apoderado.');
+                return res.status(404).json({ error: 'No se encontró el número de celular del apoderado' });
             }
-
-            const curso = cursoResults[0]?.NOMBRE_CURSO || 'Curso desconocido';
-
-            const insertQuery = `
-                INSERT INTO ATRASOS (RUT_ALUMNO, FECHA_ATRASOS, JUSTIFICATIVO, TIPO_JUSTIFICATIVO) 
-                VALUES (?, ?, 0, 'Sin justificativo')
-            `;
-
-            db.query(insertQuery, [rutAlumno, fechaAtrasos], async (insertError, results) => {
-                if (insertError) {
-                    return res.status(500).json({ error: 'Error al insertar el atraso' });
-                }
-
-                const codAtraso = results.insertId;
-
-                try {
-                    const pdfPath = await pdfController.fillForm(rutAlumno, fechaAtrasos);
-                    const pdfFileName = pdfPath.split('/').pop();
-                    console.log('Nombre del PDF generado:', pdfFileName);
-
-                    const updatePdfPathQuery = 'UPDATE ATRASOS SET pdf_path = ? WHERE COD_ATRASOS = ?';
-                    db.query(updatePdfPathQuery, [pdfFileName, codAtraso], (error, result) => {
-                        if (error) {
-                            console.error('Error al actualizar la ruta del PDF institucional:', error);
-                            return res.status(500).json({ error: 'Error al actualizar la ruta del PDF en la base de datos' });
-                        }
-                        console.log('Ruta del PDF actualizada correctamente en la base de datos.');
-                    });
-
-                    const getCelularQuery = 'SELECT N_CELULAR_APODERADO FROM ALUMNOS WHERE RUT_ALUMNO = ?';
-                    db.query(getCelularQuery, [rutAlumno], async (error, results) => {
-                        if (error) {
-                            console.error('Error al obtener el celular del apoderado:', error);
-                            return res.status(500).json({ error: 'Error al obtener el celular del apoderado' });
-                        }
-
-                        const celularApoderado = results[0]?.N_CELULAR_APODERADO;
-                        if (celularApoderado) {
-                            await sendPDF(celularApoderado, pdfPath);
-                        } else {
-                            console.error('Error: No se encontró el número de celular del apoderado.');
-                            return res.status(404).json({ error: 'No se encontró el número de celular del apoderado' });
-                        }
-                    });
-
-                    const baucherPath = generateBaucher({
-                        curso,
-                        nombre: `${alumno.NOMBRE_ALUMNO} ${alumno.APELLIDO_PATERNO_ALUMNO} ${alumno.APELLIDO_MATERNO_ALUMNO}`,
-                        rut: alumno.RUT_ALUMNO,
-                        fecha: fechaAtrasos.toLocaleString(),
-                        codAtraso,
-                    });
-
-                    console.log('Baucher generado correctamente.');
-
-                    return res.status(201).json({
-                        message: 'Atraso creado con éxito',
-                        pdfInstitutionalPath: pdfPath,
-                        baucherPath,
-                    });
-                } catch (pdfError) {
-                    console.error('Error al procesar el atraso:', pdfError);
-                    res.status(500).json({ error: 'Error al procesar el atraso y generar PDFs' });
-                }
+            
+            const baucherPath = generateBaucher({
+                curso,
+                nombre: `${alumno.nombre_alumno} ${alumno.apellido_paterno_alumno} ${alumno.apellido_materno_alumno}`,
+                rut: alumno.rut_alumno,
+                fecha: fechaAtrasos.toLocaleString(),
+                codAtraso,
             });
-        });
-    });
+
+            console.log('Baucher generado correctamente.');
+
+            return res.status(201).json({
+                message: 'Atraso creado con éxito',
+                pdfInstitutionalPath: pdfPath,
+                baucherPath,
+            });
+        } catch (pdfError) {
+            console.error('Error al procesar el atraso:', pdfError);
+            res.status(500).json({ error: 'Error al procesar el atraso y generar PDFs' });
+        }
+    } catch (error) {
+        console.error('Error al crear el atraso:', error);
+        res.status(500).json({ error: 'Error al crear el atraso' });
+    }
 };
 
 // Actualizar un atraso existente
-exports.updateAtraso = (req, res) => {
+exports.updateAtraso = async (req, res) => {
     const { id } = req.params;
     const { rutAlumno, fechaAtrasos, justificativo } = req.body;
 
@@ -231,32 +215,33 @@ exports.updateAtraso = (req, res) => {
         return res.status(400).json({ error: 'El justificativo debe ser un booleano' });
     }
 
-    const query = 'UPDATE ATRASOS SET RUT_ALUMNO = ?, FECHA_ATRASOS = ?, JUSTIFICATIVO = ? WHERE COD_ATRASOS = ?';
-
-    db.query(query, [rutAlumno, fechaAtrasos, justificativo, id], (error) => {
-        if (error) {
-            return res.status(500).json({ error: 'Error al actualizar el atraso' });
-        }
+    try {
+        await pool.query(
+            'UPDATE atrasos SET rut_alumno = $1, fecha_atrasos = $2, justificativo = $3 WHERE cod_atrasos = $4',
+            [rutAlumno, fechaAtrasos, justificativo, id]
+        );
         res.status(200).json({ message: 'Atraso actualizado con éxito' });
-    });
+    } catch (error) {
+        console.error('Error al actualizar el atraso:', error);
+        return res.status(500).json({ error: 'Error al actualizar el atraso' });
+    }
 };
 
 // Eliminar un atraso
-exports.deleteAtraso = (req, res) => {
+exports.deleteAtraso = async (req, res) => {
     const { id } = req.params;
 
-    const query = 'DELETE FROM ATRASOS WHERE COD_ATRASOS = ?';
-
-    db.query(query, [id], (error) => {
-        if (error) {
-            return res.status(500).json({ error: 'Error al eliminar el atraso' });
-        }
+    try {
+        await pool.query('DELETE FROM atrasos WHERE cod_atrasos = $1', [id]);
         res.status(200).json({ message: 'Atraso eliminado con éxito' });
-    });
+    } catch (error) {
+        console.error('Error al eliminar el atraso:', error);
+        return res.status(500).json({ error: 'Error al eliminar el atraso' });
+    }
 };
 
 // Obtener atrasos del día
-exports.getAtrasosDelDia = (req, res) => {
+exports.getAtrasosDelDia = async (req, res) => {
     const { fecha } = req.query;
 
     if (!fecha) {
@@ -267,27 +252,26 @@ exports.getAtrasosDelDia = (req, res) => {
     const finDelDia = new Date(`${fecha}T23:59:59`);
 
     const query = `
-        SELECT A.RUT_ALUMNO, A.FECHA_ATRASOS, A.JUSTIFICATIVO, A.TIPO_JUSTIFICATIVO, 
-               CONCAT(B.NOMBRE_ALUMNO, ' ', B.SEGUNDO_NOMBRE_ALUMNO, ' ', B.APELLIDO_PATERNO_ALUMNO, ' ', B.APELLIDO_MATERNO_ALUMNO) AS NOMBRE_COMPLETO, 
-               C.NOMBRE_CURSO
-        FROM ATRASOS A
-        JOIN ALUMNOS B ON A.RUT_ALUMNO = B.RUT_ALUMNO
-        JOIN CURSOS C ON B.COD_CURSO = C.COD_CURSO
-        WHERE A.FECHA_ATRASOS BETWEEN ? AND ?;
+        SELECT a.rut_alumno, a.fecha_atrasos, a.justificativo, a.tipo_justificativo, 
+               CONCAT(b.nombre_alumno, ' ', b.segundo_nombre_alumno, ' ', b.apellido_paterno_alumno, ' ', b.apellido_materno_alumno) AS nombre_completo, 
+               c.nombre_curso
+        FROM atrasos a
+        JOIN alumnos b ON a.rut_alumno = b.rut_alumno
+        JOIN cursos c ON b.cod_curso = c.cod_curso
+        WHERE a.fecha_atrasos BETWEEN $1 AND $2
     `;
 
-    db.query(query, [inicioDelDia, finDelDia], (error, results) => {
-        if (error) {
-            console.error('Error en la consulta SQL:', error);
-            return res.status(500).json({ error: 'Error al obtener los atrasos' });
-        }
-        res.json(results);
-    });
+    try {
+        const result = await pool.query(query, [inicioDelDia, finDelDia]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en la consulta SQL:', error);
+        return res.status(500).json({ error: 'Error al obtener los atrasos' });
+    }
 };
 
-
 // Obtener atrasos en un rango de fechas con el tipo de justificativo
-exports.getAtrasosRango = (req, res) => {
+exports.getAtrasosRango = async (req, res) => {
     const { startDate, endDate } = req.query;
 
     if (!startDate || !endDate) {
@@ -306,58 +290,55 @@ exports.getAtrasosRango = (req, res) => {
 
     const query = `
         SELECT 
-            A.RUT_ALUMNO,
-            A.FECHA_ATRASOS,
+            a.rut_alumno,
+            a.fecha_atrasos,
             CASE
-                WHEN B.JUSTIFICATIVO_RESIDENCIA = 1 THEN 'Residencia'
-                WHEN B.JUSTIFICATIVO_MEDICO = 1 THEN 'Médico'
-                WHEN B.JUSTIFICATIVO_DEPORTIVO = 1 THEN 'Deportivo'
+                WHEN b.justificativo_residencia = true THEN 'Residencia'
+                WHEN b.justificativo_medico = true THEN 'Médico'
+                WHEN b.justificativo_deportivo = true THEN 'Deportivo'
                 ELSE 'Sin justificativo'
-            END AS TIPO_JUSTIFICATIVO,
-            CONCAT(B.NOMBRE_ALUMNO, ' ', B.SEGUNDO_NOMBRE_ALUMNO, ' ', B.APELLIDO_PATERNO_ALUMNO, ' ', B.APELLIDO_MATERNO_ALUMNO) AS NOMBRE_COMPLETO,
-            C.NOMBRE_CURSO
+            END AS tipo_justificativo,
+            CONCAT(b.nombre_alumno, ' ', b.segundo_nombre_alumno, ' ', b.apellido_paterno_alumno, ' ', b.apellido_materno_alumno) AS nombre_completo,
+            c.nombre_curso
         FROM 
-            ATRASOS A
+            atrasos a
         JOIN 
-            ALUMNOS B ON A.RUT_ALUMNO = B.RUT_ALUMNO
+            alumnos b ON a.rut_alumno = b.rut_alumno
         JOIN 
-            CURSOS C ON B.COD_CURSO = C.COD_CURSO
+            cursos c ON b.cod_curso = c.cod_curso
         WHERE 
-            A.FECHA_ATRASOS BETWEEN ? AND ?
+            a.fecha_atrasos BETWEEN $1 AND $2
         ORDER BY 
-            A.FECHA_ATRASOS ASC
+            a.fecha_atrasos ASC
     `;
 
-    db.query(query, [start, end], (error, results) => {
-        if (error) {
-            console.error('Error en la consulta de atrasos por rango:', error);
-            return res.status(500).json({ error: 'Error al obtener los atrasos por rango' });
-        }
-
+    try {
+        const result = await pool.query(query, [start, end]);
         res.status(200).json({
             startDate: start.toISOString().split('T')[0],
             endDate: end.toISOString().split('T')[0],
-            atrasos: results
+            atrasos: result.rows
         });
-    });
+    } catch (error) {
+        console.error('Error en la consulta de atrasos por rango:', error);
+        return res.status(500).json({ error: 'Error al obtener los atrasos por rango' });
+    }
 };
+
 // Verificar si existe un RUT
-exports.verificarRut = (req, res) => {
+exports.verificarRut = async (req, res) => {
     const { rut } = req.params;
 
     if (!rut) {
         return res.status(400).json({ error: 'RUT no proporcionado' });
     }
 
-    const query = 'SELECT COUNT(*) as count FROM ALUMNOS WHERE RUT_ALUMNO = ?';
-
-    db.query(query, [rut], (error, results) => {
-        if (error) {
-            console.error('Error al verificar RUT:', error);
-            return res.status(500).json({ error: 'Error al verificar el RUT' });
-        }
-
-        const exists = results[0].count > 0;
+    try {
+        const result = await pool.query('SELECT COUNT(*) as count FROM alumnos WHERE rut_alumno = $1', [rut]);
+        const exists = parseInt(result.rows[0].count) > 0;
         res.json({ exists });
-    });
+    } catch (error) {
+        console.error('Error al verificar RUT:', error);
+        return res.status(500).json({ error: 'Error al verificar el RUT' });
+    }
 };

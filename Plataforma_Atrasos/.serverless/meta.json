@@ -1,0 +1,104 @@
+{
+  "/home/angallar/repos/Sistema-de-control-de-asistencia-con-mensajeria-instantanea/Plataforma_Atrasos/serverless.yml": {
+    "versionFramework": "4.8.0",
+    "servicePath": "/home/angallar/repos/Sistema-de-control-de-asistencia-con-mensajeria-instantanea/Plataforma_Atrasos/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "plataforma-atrasos-backend",
+      "frameworkVersion": "3",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs18.x",
+        "stage": "dev",
+        "region": "us-east-1",
+        "memorySize": 256,
+        "timeout": 30,
+        "environment": {
+          "DB_HOST": "aws-0-us-west-1.pooler.supabase.com",
+          "DB_USER": "postgres.rdbzjzzzbgyjyhjpxdmm",
+          "DB_PASSWORD": "<REDACTED>",
+          "DB_NAME": "postgres",
+          "JWT_SECRET": "<REDACTED>"
+        }
+      },
+      "functions": {
+        "api": {
+          "handler": "src/app.handler",
+          "events": [
+            {
+              "http": {
+                "path": "/{proxy+}",
+                "method": "any",
+                "cors": true
+              }
+            }
+          ]
+        }
+      },
+      "plugins": [
+        "serverless-offline",
+        "serverless-dotenv-plugin"
+      ],
+      "custom": {
+        "serverless-offline": {
+          "httpPort": 3000
+        }
+      },
+      "package": {
+        "patterns": [
+          "!node_modules/aws-sdk/**",
+          "!frontend/**",
+          "!__mocks__/**",
+          "!cypress/**",
+          "!.wwebjs_cache/**",
+          "!**/*.test.js",
+          "!**/__tests__/**"
+        ]
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs18.x",
+      "stage": "dev",
+      "region": "us-east-1",
+      "memorySize": 256,
+      "timeout": 30,
+      "environment": {
+        "DB_HOST": "aws-0-us-west-1.pooler.supabase.com",
+        "DB_USER": "postgres.rdbzjzzzbgyjyhjpxdmm",
+        "DB_PASSWORD": "<REDACTED>",
+        "DB_NAME": "postgres",
+        "JWT_SECRET": "<REDACTED>"
+      }
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": true,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "error": {
+      "message": "The Serverless version (4.8.0) does not satisfy the \"frameworkVersion\" (3) in serverless",
+      "stack": "ServerlessError3: The Serverless version (4.8.0) does not satisfy the \"frameworkVersion\" (3) in serverless\n    at Service.loadServiceFileParam (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1434:9279)\n    at Service.load (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1434:6921)\n    at Serverless.init (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1440:9859)\n    at runFramework (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1467:855)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async TraditionalRunner.run (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1463:28364)\n    at async route (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1509:2779)\n    at async Object.run (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1510:3668)\n    at async run2 (file:///home/angallar/.serverless/releases/4.8.0/package/dist/sf-core.js:1510:4821)",
+      "code": "FRAMEWORK_VERSION_MISMATCH"
+    },
+    "serviceRawFile": "service: plataforma-atrasos-backend\n\nframeworkVersion: '3'\n\nprovider:\n  name: aws\n  runtime: nodejs18.x\n  stage: ${opt:stage, 'dev'}\n  region: ${opt:region, 'us-east-1'}\n  memorySize: 256\n  timeout: 30\n  environment:\n    DB_HOST: ${env:DB_HOST}\n    DB_USER: ${env:DB_USER}\n    DB_PASSWORD: ${env:DB_PASSWORD}\n    DB_NAME: ${env:DB_NAME}\n    JWT_SECRET: ${env:JWT_SECRET}\n  \nfunctions:\n  api:\n    handler: src/app.handler\n    events:\n      - http:\n          path: /{proxy+}\n          method: any\n          cors: true\n\nplugins:\n  - serverless-offline\n  - serverless-dotenv-plugin\n\ncustom:\n  serverless-offline:\n    httpPort: 3000\n\npackage:\n  patterns:\n    - '!node_modules/aws-sdk/**'\n    - '!frontend/**'\n    - '!__mocks__/**'\n    - '!cypress/**'\n    - '!.wwebjs_cache/**'\n    - '!**/*.test.js'\n    - '!**/__tests__/**' ",
+    "command": [
+      "deploy"
+    ],
+    "options": {},
+    "orgId": "65cd3f8f-6567-4abc-9af7-c8458696af2c",
+    "orgName": "plataformaatrasos",
+    "userId": "ZZ3bFL6dZl23fT1gLX",
+    "userName": "plataformaatrasos",
+    "serviceProviderAwsAccountId": "650251731378",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}
