@@ -1,52 +1,48 @@
-CREATE DATABASE plataforma_atrasos;
-
-USE plataforma_atrasos;
-
-CREATE TABLE ROL (
-    COD_ROL INT AUTO_INCREMENT,
-    NOMBRE_ROL VARCHAR(255),
-    PRIMARY KEY(COD_ROL)
+-- Creación de la tabla ROL en el schema public
+CREATE TABLE public.rol (
+    cod_rol SERIAL PRIMARY KEY,
+    nombre_rol VARCHAR(255)
 );
 
-CREATE TABLE USUARIOS (
-    COD_USUARIO INT AUTO_INCREMENT,
-    NOMBRE_USUARIO VARCHAR(255),
-    COD_ROL INT,
-    CONTRASEÑA VARCHAR(255),
-    RUT_USERNAME VARCHAR(255),
-    PRIMARY KEY(COD_USUARIO),
-    FOREIGN KEY (COD_ROL) REFERENCES ROL(COD_ROL)
+-- Creación de la tabla USUARIOS
+CREATE TABLE public.usuarios (
+    cod_usuario SERIAL PRIMARY KEY,
+    nombre_usuario VARCHAR(255),
+    cod_rol INT,
+    contraseña VARCHAR(255),
+    rut_username VARCHAR(255),
+    FOREIGN KEY (cod_rol) REFERENCES public.rol(cod_rol)
 );
 
-CREATE TABLE CURSOS (
-    COD_CURSO INT AUTO_INCREMENT,
-    NOMBRE_CURSO VARCHAR(255),
-    PRIMARY KEY(COD_CURSO)
+-- Creación de la tabla CURSOS
+CREATE TABLE public.cursos (
+    cod_curso SERIAL PRIMARY KEY,
+    nombre_curso VARCHAR(255)
 );
 
-CREATE TABLE ALUMNOS (
-    RUT_ALUMNO VARCHAR(255),
-    COD_CURSO INT,
-    NOMBRE_ALUMNO VARCHAR(255),
-    SEGUNDO_NOMBRE_ALUMNO VARCHAR(255),
-    APELLIDO_PATERNO_ALUMNO VARCHAR(255),
-    APELLIDO_MATERNO_ALUMNO VARCHAR(255),
-    N_CELULAR_APODERADO VARCHAR(255),
-    HUELLA_ALUMNO VARBINARY(255),
-    JUSTIFICATIVO_RESIDENCIA TINYINT(1) DEFAULT 0,
-    JUSTIFICATIVO_DEPORTIVO TINYINT(1) DEFAULT 0,
-    JUSTIFICATIVO_MEDICO TINYINT(1) DEFAULT 0,
-    PRIMARY KEY(RUT_ALUMNO),
-    FOREIGN KEY (COD_CURSO) REFERENCES CURSOS(COD_CURSO)
+-- Creación de la tabla ALUMNOS
+CREATE TABLE public.alumnos (
+    rut_alumno VARCHAR(255) PRIMARY KEY,
+    cod_curso INT,
+    nombre_alumno VARCHAR(255),
+    segundo_nombre_alumno VARCHAR(255),
+    apellido_paterno_alumno VARCHAR(255),
+    apellido_materno_alumno VARCHAR(255),
+    n_celular_apoderado VARCHAR(255),
+    huella_alumno BYTEA,
+    justificativo_residencia BOOLEAN DEFAULT false,
+    justificativo_deportivo BOOLEAN DEFAULT false,
+    justificativo_medico BOOLEAN DEFAULT false,
+    FOREIGN KEY (cod_curso) REFERENCES public.cursos(cod_curso)
 );
 
-CREATE TABLE ATRASOS (
-    COD_ATRASOS INT AUTO_INCREMENT,
-    RUT_ALUMNO VARCHAR(255),
-    FECHA_ATRASOS DATE,
-    JUSTIFICATIVO BOOLEAN,
+-- Creación de la tabla ATRASOS
+CREATE TABLE public.atrasos (
+    cod_atrasos SERIAL PRIMARY KEY,
+    rut_alumno VARCHAR(255),
+    fecha_atrasos DATE,
+    justificativo BOOLEAN,
     pdf_path VARCHAR(255),
-    TIPO_JUSTIFICATIVO VARCHAR(255),
-    PRIMARY KEY(COD_ATRASOS),
-    FOREIGN KEY (RUT_ALUMNO) REFERENCES ALUMNOS(RUT_ALUMNO)
+    tipo_justificativo VARCHAR(255),
+    FOREIGN KEY (rut_alumno) REFERENCES public.alumnos(rut_alumno)
 );
