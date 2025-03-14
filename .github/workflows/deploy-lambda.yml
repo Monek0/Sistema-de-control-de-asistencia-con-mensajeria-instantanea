@@ -28,6 +28,7 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
+          cache-dependency-path: Plataforma_Atrasos/package-lock.json
 
       - name: Install dependencies
         run: npm i --legacy-peer-deps
