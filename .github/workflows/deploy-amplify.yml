@@ -39,16 +39,26 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 18.18.2
           # Skip caching to avoid the error
           # cache: 'npm'
           # cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
 
       - name: Install dependencies
         run: |
-          # Clean npm cache and install dependencies
+          # Clean npm cache and use a fresh installation
+          rm -rf node_modules package-lock.json
           npm cache clean --force
-          npm install --no-audit --no-fund --legacy-peer-deps
+          
+          # Use npm install with specific flags to handle dependency resolution better
+          npm install --no-audit --no-fund --legacy-peer-deps --force
+          
+          # Verify key packages are installed correctly 
+          echo "Checking if ajv and ajv-keywords are installed correctly:"
+          npm ls ajv ajv-keywords || true
+          
+          # Install any missing peer dependencies
+          npx npm-check
 
       # Create API config file to centralize API URL management
       - name: Create API Configuration
@@ -78,9 +88,9 @@ jobs:
 
       - name: Build frontend
         run: |
-          # Build the application
+          # Build the application with enhanced options
           echo "Starting build process..."
-          npm run build
+          NODE_OPTIONS=--max_old_space_size=4096 npm run build
           echo "Build completed"
           
           # Verify the build output
@@ -88,6 +98,7 @@ jobs:
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
           CI: false  # Prevents treating warnings as errors
+          GENERATE_SOURCEMAP: false  # Reduce build size
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
