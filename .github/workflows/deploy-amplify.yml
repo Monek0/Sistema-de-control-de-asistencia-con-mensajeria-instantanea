@@ -6,12 +6,14 @@ on:
       - main
     paths:
       - 'Plataforma_Atrasos/frontend/**'
+      - '.github/workflows/deploy-amplify.yml'
   workflow_run:
     workflows: ["Deploy Backend to AWS Lambda"]
     types:
       - completed
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -23,17 +25,53 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
 
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
+      - name: Install dependencies with forced resolutions
+        run: |
+          # Create .npmrc to force specific resolutions
+          echo "legacy-peer-deps=true" > .npmrc
+          
+          # Create a specific resolution for ajv in package.json
+          jq '.resolutions = {"ajv": "6.12.6", "ajv-keywords": "3.5.2", "fork-ts-checker-webpack-plugin/*/ajv": "6.12.6"}' package.json > package.json.tmp
+          mv package.json.tmp package.json
+          
+          # Install dependencies
+          npm install
+
+      - name: Fix ajv dependency issues
+        run: |
+          # First remove the problematic modules
+          rm -rf node_modules/fork-ts-checker-webpack-plugin/node_modules/ajv-keywords
+          rm -rf node_modules/fork-ts-checker-webpack-plugin/node_modules/ajv
+          rm -rf node_modules/ajv-keywords
+          
+          # Install specific versions directly
+          npm install --no-save ajv@6.12.6 ajv-keywords@3.5.2
+          
+          # Also create patch for schema-utils to bypass ajv-keywords issue if needed
+          if [ -f "node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js" ]; then
+            # Make a backup
+            cp node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js.bak
+            
+            # Replace the problematic line
+            sed -i 's/ajvKeywords(ajv, \["instanceof", "formatMinimum", "formatMaximum", "patternRequired"\]);/try { ajvKeywords(ajv, ["instanceof"]); } catch(e) { console.warn("Ajv keywords error:", e.message); }/' node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js
+          fi
+          
+          # Verify installed versions at key locations
+          echo "Main ajv version:"
+          npm list ajv | grep ajv
+          echo "Main ajv-keywords version:"
+          npm list ajv-keywords | grep ajv-keywords
+          echo "fork-ts-checker-webpack-plugin ajv version:"
+          find node_modules -name "ajv" -type d | grep fork-ts-checker || echo "Not found"
 
       # Create API config file 
       - name: Create API Configuration
@@ -45,30 +83,71 @@ jobs:
           export default API_URL;
           EOL
 
+      # Get API URL from previous workflow if available
+      - name: Check for backend workflow trigger
+        id: check-backend
+        if: github.event_name == 'workflow_run'
+        run: |
+          echo "Triggered by backend deployment - retrieving API URL"
+          echo "backend_triggered=true" >> $GITHUB_OUTPUT
+
       # Update API URL in the .env file
       - name: Setup environment configuration
         run: |
+          if [ "${{ steps.check-backend.outputs.backend_triggered }}" == "true" ]; then
+            # If triggered by backend, use its API URL if available
+            # We have to pull the main branch as it may have been updated since our checkout
+            git fetch origin main
+            git checkout main
+            echo "Using updated backend API URL from backend deployment"
+          fi
+          
           echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > .env
           echo "REACT_APP_BACKEND_STAGE=production" >> .env
+          
+          # Show what API URL we're using for debugging
+          echo "Using API URL: ${{ secrets.REACT_APP_API_URL }}"
 
       - name: Build frontend
-        run: npm run build
+        run: |
+          # Use NODE_OPTIONS to increase memory limit if needed
+          export NODE_OPTIONS="--max-old-space-size=4096"
+          CI=false GENERATE_SOURCEMAP=false npm run build
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
-          CI: false  # Prevents treating warnings as errors
-          GENERATE_SOURCEMAP: false  # Reduce build size
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
 
+      # Use Amplify CLI to deploy the built artifacts
       - name: Deploy to AWS Amplify
         run: |
+          # Install AWS Amplify CLI if not already available
+          npm install -g @aws-amplify/cli
+
+          # Create zip of the build folder
+          cd build
+          zip -r ../build.zip .
+          cd ..
+
           # Start deployment to Amplify
-          aws amplify start-deployment \
+          DEPLOYMENT_ID=$(aws amplify start-deployment \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --branch-name main \
-            --source-url ${{ github.server_url }}/${{ github.repository }}/archive/refs/heads/main.zip 
+            --zip-file fileb://build.zip \
+            --query 'jobId' \
+            --output text)
+          
+          echo "Started deployment with ID: $DEPLOYMENT_ID"
+          
+          # Wait for deployment to complete
+          aws amplify wait job-complete \
+            --app-id ${{ secrets.AMPLIFY_APP_ID }} \
+            --branch-name main \
+            --job-id $DEPLOYMENT_ID
+
+          echo "Deployment completed successfully" 

@@ -6,16 +6,21 @@ on:
       - main
     paths:
       - 'Plataforma_Atrasos/**'
+      - '.github/workflows/deploy-lambda.yml'
       - '!Plataforma_Atrasos/frontend/**'
       - '!Plataforma_Atrasos/cypress/**'
       - '!Plataforma_Atrasos/__mocks__/**'
       - '!**.md'
+  workflow_dispatch:
 
 jobs:
   deploy:
     name: Deploy Backend
     runs-on: ubuntu-latest
     environment: main
+    outputs:
+      api_url: ${{ steps.extract-endpoint.outputs.API_URL }}
+      deployment_success: ${{ steps.deploy.outcome == 'success' }}
     defaults:
       run:
         working-directory: Plataforma_Atrasos
@@ -23,27 +28,104 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/package-lock.json
 
+      - name: Create serverless packaging config
+        run: |
+          if ! grep -q "package:" serverless.yml; then
+            echo -e "\n# Adding packaging configuration" >> serverless.yml
+            echo "package:" >> serverless.yml
+            echo "  individually: true" >> serverless.yml
+            echo "  patterns:" >> serverless.yml
+            echo "    - '!node_modules/aws-sdk/**'" >> serverless.yml
+            echo "    - '!node_modules/**/aws-sdk/**'" >> serverless.yml
+            echo "    - '!node_modules/**/*.md'" >> serverless.yml
+            echo "    - '!node_modules/**/*.d.ts'" >> serverless.yml
+            echo "    - '!node_modules/**/*.map'" >> serverless.yml
+            echo "    - '!node_modules/**/LICENSE'" >> serverless.yml
+            echo "    - '!node_modules/**/*.flow'" >> serverless.yml
+            echo "    - '!node_modules/**/*.txt'" >> serverless.yml
+            echo "    - '!node_modules/**/*.json'" >> serverless.yml
+            echo "    - '!node_modules/**/test/**'" >> serverless.yml
+            echo "    - '!node_modules/**/tests/**'" >> serverless.yml
+            echo "    - '!node_modules/**/examples/**'" >> serverless.yml
+            echo "    - '!node_modules/**/docs/**'" >> serverless.yml
+            echo "    - '!.git/**'" >> serverless.yml
+            echo "    - '!.github/**'" >> serverless.yml
+            echo "    - '!.vscode/**'" >> serverless.yml
+            echo "    - '!docs/**'" >> serverless.yml
+            echo "    - '!tests/**'" >> serverless.yml
+            echo "    - '!.env*'" >> serverless.yml
+            echo "    - '!*.log'" >> serverless.yml
+            echo "    - '!cypress/**'" >> serverless.yml
+            echo "    - '!__mocks__/**'" >> serverless.yml
+            echo "    - '!frontend/**'" >> serverless.yml
+            # Add explicit exclusions for big packages just in case
+            echo "    - '!node_modules/whatsapp-web.js/**'" >> serverless.yml
+            echo "    - '!node_modules/usb/**'" >> serverless.yml
+            echo "    - '!node_modules/escpos*/**'" >> serverless.yml
+            echo "    - '!node_modules/node-thermal-printer/**'" >> serverless.yml
+            echo "    - '!node_modules/puppeteer*/**'" >> serverless.yml
+            echo "    - '!node_modules/chromium*/**'" >> serverless.yml
+          fi
+
+      - name: Create .npmignore file
+        run: |
+          echo "# NPM ignore file to reduce package size" > .npmignore
+          echo ".git/" >> .npmignore
+          echo ".github/" >> .npmignore
+          echo "node_modules/**/test/" >> .npmignore
+          echo "node_modules/**/tests/" >> .npmignore
+          echo "node_modules/**/docs/" >> .npmignore
+          echo "node_modules/**/examples/" >> .npmignore
+          echo "*.log" >> .npmignore
+          echo "*.md" >> .npmignore
+          echo "cypress/" >> .npmignore
+          echo "__mocks__/" >> .npmignore
+          echo "frontend/" >> .npmignore
+          # Explicitly ignore specific large packages
+          echo "node_modules/whatsapp-web.js/" >> .npmignore
+          echo "node_modules/usb/" >> .npmignore
+          echo "node_modules/escpos*/" >> .npmignore
+          echo "node_modules/node-thermal-printer/" >> .npmignore
+          echo "node_modules/puppeteer*/" >> .npmignore
+          echo "node_modules/chromium*/" >> .npmignore
+
       - name: Install dependencies and serverless
         run: |
-          # Install production dependencies
+          # Install only production dependencies
           npm ci --omit=dev --omit=optional
           
-          # Install serverless and required plugins
+          # Install serverless globally
           npm install -g serverless@3
-          npm install --no-save serverless-offline serverless-dotenv-plugin @vendia/serverless-express
+          
+          # Install serverless plugins as dev dependencies
+          npm install --save-dev serverless-offline serverless-dotenv-plugin @vendia/serverless-express
+
+      - name: Optimize node_modules
+        run: |
+          # Prune unnecessary files from node_modules
+          find node_modules -type d -name "test" -o -name "tests" -o -name "docs" -o -name "examples" | xargs rm -rf || true
+          find node_modules -name "*.md" -o -name "*.d.ts" -o -name "*.map" -o -name "LICENSE" | xargs rm -rf || true
+          
+          # Double-check removal of large packages that might have been installed as dependencies of other packages
+          rm -rf node_modules/whatsapp-web.js node_modules/usb node_modules/escpos* node_modules/node-thermal-printer node_modules/puppeteer* node_modules/chromium* || true
+          
+          # Check estimated package size
+          du -sh $(pwd) | cut -f1
+          echo "Listing largest packages in node_modules:"
+          du -h --max-depth=1 node_modules | sort -hr | head -20
 
       - name: Deploy to AWS Lambda
         id: deploy
-        run: serverless deploy --stage production --region us-east-2
+        run: serverless deploy --stage production --region us-east-2 --verbose
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
