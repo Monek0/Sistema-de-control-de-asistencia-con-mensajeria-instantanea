@@ -37,17 +37,24 @@ custom:
     httpPort: 3000
 
 package:
-  individually: true
   patterns:
+    # Include only what we need
+    - 'src/**'
+    - 'package.json'
+    - '.env'
+    - '!src/**/*.test.js'
+    - '!src/**/__tests__/**'
+    
+    # Exclude unnecessary files and directories
+    - '!node_modules/.bin/**'
     - '!node_modules/aws-sdk/**'
     - '!node_modules/cypress/**'
     - '!node_modules/@cypress/**'
+    - '!node_modules/@babel/**'
+    - '!node_modules/@testing-library/**'
+    - '!node_modules/babel-*/**'
+    - '!node_modules/jest*/**'
     - '!frontend/**'
     - '!__mocks__/**'
     - '!cypress/**'
-    - '!.wwebjs_cache/**'
-    - '!**/*.test.js'
-    - '!**/__tests__/**'
-    - 'src/**'
-    - 'package.json'
-    - '.env' 
+    - '!.wwebjs_cache/**' 
