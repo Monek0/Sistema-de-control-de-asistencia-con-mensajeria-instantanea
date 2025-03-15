@@ -32,37 +32,22 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/package-lock.json
 
-      - name: Install production dependencies
+      - name: Install dependencies and serverless
         run: |
-          # Install only production dependencies, explicitly excluding dev packages
-          npm ci --omit=dev --omit=optional --ignore-scripts
+          # Install production dependencies
+          npm ci --omit=dev --omit=optional
           
-          # Install serverless plugins needed for deployment
-          npm install --no-save serverless-offline serverless-dotenv-plugin @vendia/serverless-express
-          
-          # Install serverless globally
+          # Install serverless and required plugins
           npm install -g serverless@3
+          npm install --no-save serverless-offline serverless-dotenv-plugin @vendia/serverless-express
 
-      - name: Verify dependencies
-        run: |
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          echo "Working directory: $(pwd)"
-          echo "Checking required packages:"
-          ls -la node_modules/serverless-offline || echo "serverless-offline not found"
-          ls -la node_modules/serverless-dotenv-plugin || echo "serverless-dotenv-plugin not found"
-          ls -la node_modules/@vendia/serverless-express || echo "@vendia/serverless-express not found"
-          
       - name: Deploy to AWS Lambda
         id: deploy
-        run: |
-          serverless --version
-          serverless deploy --stage production --verbose --region us-east-2
+        run: serverless deploy --stage production --region us-east-2
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-2
-          AWS_DEFAULT_REGION: us-east-2
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -73,35 +58,14 @@ jobs:
       - name: Extract API endpoint
         id: extract-endpoint
         run: |
-          if [ -f ./serverless-output.json ]; then
-            # Extract the endpoint URL from the output file
-            API_URL=$(cat ./serverless-output.json | grep -o '"ServiceEndpoint":"[^"]*"' | sed 's/"ServiceEndpoint":"//g' | sed 's/"//g')
-            
-            if [ -n "$API_URL" ]; then
-              echo "API_URL=$API_URL" >> $GITHUB_ENV
-              echo "API_URL=$API_URL" >> $GITHUB_OUTPUT
-              echo "✅ Extracted API URL: $API_URL"
-            else
-              echo "⚠️ Could not extract API URL from serverless-output.json"
-            fi
+          # Get the API URL from API Gateway
+          API_ID=$(aws apigateway get-rest-apis --region us-east-2 --query "items[?name=='plataforma-atrasos-backend-production'].id" --output text)
+          
+          if [ -n "$API_ID" ]; then
+            API_URL="https://${API_ID}.execute-api.us-east-2.amazonaws.com/production"
+            echo "API_URL=$API_URL" >> $GITHUB_ENV
+            echo "API_URL=$API_URL" >> $GITHUB_OUTPUT
+            echo "✅ API URL: $API_URL"
           else
-            # Fallback to querying AWS API Gateway directly
-            echo "⚠️ serverless-output.json not found, trying to query API Gateway directly"
-            API_ID=$(aws apigateway get-rest-apis --region us-east-2 --query "items[?name=='plataforma-atrasos-backend-production'].id" --output text)
-            
-            if [ -n "$API_ID" ]; then
-              API_URL="https://${API_ID}.execute-api.us-east-2.amazonaws.com/production"
-              echo "API_URL=$API_URL" >> $GITHUB_ENV
-              echo "API_URL=$API_URL" >> $GITHUB_OUTPUT
-              echo "✅ API URL from API Gateway: $API_URL"
-            else
-              echo "⚠️ Could not find API Gateway for the service"
-            fi
-          fi
-      
-      - name: Update API URL in Secrets
-        if: steps.extract-endpoint.outputs.API_URL != ''
-        run: |
-          echo "Updating REACT_APP_API_URL in GitHub secrets is not directly possible via Actions"
-          echo "Please manually set the REACT_APP_API_URL secret to: ${{ steps.extract-endpoint.outputs.API_URL }}"
-          echo "This will ensure your frontend connects to the correct backend API" 
+            echo "⚠️ Could not determine API URL"
+          fi 

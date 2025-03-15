@@ -25,76 +25,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Debug npm environment
-      - name: Debug Node/NPM environment
-        run: |
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          echo "Working directory: $(pwd)"
-          echo "NPM cache location: $(npm config get cache)"
-          ls -la ./
-          [[ -f package.json ]] && echo "package.json exists" || echo "package.json does not exist"
-          [[ -f package-lock.json ]] && echo "package-lock.json exists" || echo "package-lock.json does not exist"
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18.18.2
-          # Skip caching to avoid the error
-          # cache: 'npm'
-          # cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
 
       - name: Install dependencies
-        run: |
-          # Clean npm cache and use a fresh installation
-          rm -rf node_modules package-lock.json
-          npm cache clean --force
-          
-          # Use npm install with specific flags to handle dependency resolution better
-          npm install --no-audit --no-fund --legacy-peer-deps --force
-          
-          # Verify key packages are installed correctly 
-          echo "Checking if ajv and ajv-keywords are installed correctly:"
-          npm ls ajv ajv-keywords || true
-          
-          # Skip the npm-check step as it causes the workflow to fail
-          # and it's just for information purposes
+        run: npm install --legacy-peer-deps
 
-      # Create API config file to centralize API URL management
+      # Create API config file 
       - name: Create API Configuration
         run: |
-          echo "Creating API configuration file"
           mkdir -p src/config
           cat > src/config/api.js << EOL
           // API configuration file - Auto-generated during deployment
           const API_URL = process.env.REACT_APP_API_URL || 'https://backend-sistema-asistencia-production.us-east-2.amazonaws.com';
-
           export default API_URL;
           EOL
-          
-          echo "API configuration created"
 
       # Update API URL in the .env file
       - name: Setup environment configuration
         run: |
-          echo "Creating/updating .env file with API endpoint"
           echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > .env
           echo "REACT_APP_BACKEND_STAGE=production" >> .env
-          
-          # Display configuration (without sensitive data)
-          echo "Environment configuration:"
-          echo "- API URL will point to production Lambda backend"
-          echo "- Using us-east-2 region for API"
 
       - name: Build frontend
-        run: |
-          # Build the application with enhanced options
-          echo "Starting build process..."
-          NODE_OPTIONS=--max_old_space_size=4096 npm run build
-          echo "Build completed"
-          
-          # Verify the build output
-          ls -la build/ || echo "Build directory not found!"
+        run: npm run build
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
           CI: false  # Prevents treating warnings as errors
@@ -105,32 +63,12 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2  # Match backend region
+          aws-region: us-east-2
 
       - name: Deploy to AWS Amplify
         run: |
-          # Install AWS CLI
-          pip install --upgrade awscli
-          
-          echo "Deploying frontend to AWS Amplify..."
-          
-          # Check if build directory exists
-          if [ ! -d "build" ]; then
-            echo "Build directory not found!"
-            exit 1
-          fi
-          
-          # Create a deployment artifact
-          zip -r deployment.zip build/
-          
           # Start deployment to Amplify
           aws amplify start-deployment \
             --app-id ${{ secrets.AMPLIFY_APP_ID }} \
             --branch-name main \
-            --source-url ${{ github.server_url }}/${{ github.repository }}/archive/refs/heads/main.zip
-          
-          echo "Frontend deployment initiated. Check AWS Amplify console for deployment status."
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-2  # Match backend region 
+            --source-url ${{ github.server_url }}/${{ github.repository }}/archive/refs/heads/main.zip 
