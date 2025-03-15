@@ -6,7 +6,7 @@ provider:
   name: aws
   runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'us-east-1'}
+  region: us-east-2
   memorySize: 256
   timeout: 30
   environment:
@@ -18,8 +18,10 @@ provider:
     JWT_SECRET: ${env:JWT_SECRET}
   
 functions:
-  api:
+  backend-sistema-asistencia:
     handler: src/app.handler
+    name: backend-sistema-asistencia-${opt:stage, 'dev'}
+    description: "Backend API for Sistema de Asistencia"
     events:
       - http:
           path: /{proxy+}
