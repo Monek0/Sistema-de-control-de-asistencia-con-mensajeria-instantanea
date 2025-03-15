@@ -33,11 +33,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # Skip development dependencies like Cypress
+          # Install production dependencies first
           npm install --production --no-optional
-          # If there are peer dependency issues, try uncommenting below:
-          # npm install --production --no-optional --legacy-peer-deps
+          
+          # Install required serverless plugins
+          npm install --no-save serverless-offline serverless-dotenv-plugin
+          
+          # Install serverless globally
           npm install -g serverless@3
+          
+          # Verify plugins installation
+          ls -la node_modules/serverless-offline || echo "serverless-offline not found"
+          ls -la node_modules/serverless-dotenv-plugin || echo "serverless-dotenv-plugin not found"
 
       - name: Debug environment (no sensitive info)
         run: |
