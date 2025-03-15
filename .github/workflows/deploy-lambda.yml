@@ -33,7 +33,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps
+          # Skip development dependencies like Cypress
+          npm install --production --no-optional
+          # If there are peer dependency issues, try uncommenting below:
+          # npm install --production --no-optional --legacy-peer-deps
           npm install -g serverless@3
 
       - name: Debug environment (no sensitive info)
