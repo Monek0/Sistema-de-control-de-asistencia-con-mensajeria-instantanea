@@ -16,6 +16,26 @@ provider:
     DB_NAME: ${env:DB_NAME}
     DB_PORT: ${env:DB_PORT}
     JWT_SECRET: ${env:JWT_SECRET}
+    STAGE: ${opt:stage, 'dev'}
+  
+  # Define CORS settings for the API Gateway
+  httpApi:
+    cors:
+      allowedOrigins:
+        - '*'  # In production you should restrict this to your specific domain
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Requested-With
+        - X-Requested-By
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowCredentials: true
+      maxAge: 86400  # 24 hours in seconds
   
 functions:
   backend-sistema-asistencia:
@@ -35,6 +55,8 @@ plugins:
 custom:
   serverless-offline:
     httpPort: 3000
+  output:
+    file: ./serverless-output.json
 
 package:
   patterns:

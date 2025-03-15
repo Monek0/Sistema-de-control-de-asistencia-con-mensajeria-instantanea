@@ -25,15 +25,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Debug npm environment
+      - name: Debug Node/NPM environment
+        run: |
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "Working directory: $(pwd)"
+          echo "NPM cache location: $(npm config get cache)"
+          ls -la ./
+          [[ -f package.json ]] && echo "package.json exists" || echo "package.json does not exist"
+          [[ -f package-lock.json ]] && echo "package-lock.json exists" || echo "package-lock.json does not exist"
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-          cache: 'npm'
-          cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
+          # Skip caching to avoid the error
+          # cache: 'npm'
+          # cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: |
+          # Clean npm cache and install dependencies
+          npm cache clean --force
+          npm install --no-audit --no-fund --legacy-peer-deps
 
       # Create API config file to centralize API URL management
       - name: Create API Configuration
@@ -62,7 +77,14 @@ jobs:
           echo "- Using us-east-2 region for API"
 
       - name: Build frontend
-        run: npm run build
+        run: |
+          # Build the application
+          echo "Starting build process..."
+          npm run build
+          echo "Build completed"
+          
+          # Verify the build output
+          ls -la build/ || echo "Build directory not found!"
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
           CI: false  # Prevents treating warnings as errors

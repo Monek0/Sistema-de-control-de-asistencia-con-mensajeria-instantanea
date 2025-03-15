@@ -54,6 +54,7 @@ jobs:
           ls -la node_modules/@vendia/serverless-express || echo "@vendia/serverless-express not found"
           
       - name: Deploy to AWS Lambda
+        id: deploy
         run: |
           serverless --version
           serverless deploy --stage production --verbose --region us-east-2
@@ -67,4 +68,40 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_PORT: ${{ secrets.DB_PORT }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }} 
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          
+      - name: Extract API endpoint
+        id: extract-endpoint
+        run: |
+          if [ -f ./serverless-output.json ]; then
+            # Extract the endpoint URL from the output file
+            API_URL=$(cat ./serverless-output.json | grep -o '"ServiceEndpoint":"[^"]*"' | sed 's/"ServiceEndpoint":"//g' | sed 's/"//g')
+            
+            if [ -n "$API_URL" ]; then
+              echo "API_URL=$API_URL" >> $GITHUB_ENV
+              echo "API_URL=$API_URL" >> $GITHUB_OUTPUT
+              echo "✅ Extracted API URL: $API_URL"
+            else
+              echo "⚠️ Could not extract API URL from serverless-output.json"
+            fi
+          else
+            # Fallback to querying AWS API Gateway directly
+            echo "⚠️ serverless-output.json not found, trying to query API Gateway directly"
+            API_ID=$(aws apigateway get-rest-apis --region us-east-2 --query "items[?name=='plataforma-atrasos-backend-production'].id" --output text)
+            
+            if [ -n "$API_ID" ]; then
+              API_URL="https://${API_ID}.execute-api.us-east-2.amazonaws.com/production"
+              echo "API_URL=$API_URL" >> $GITHUB_ENV
+              echo "API_URL=$API_URL" >> $GITHUB_OUTPUT
+              echo "✅ API URL from API Gateway: $API_URL"
+            else
+              echo "⚠️ Could not find API Gateway for the service"
+            fi
+          fi
+      
+      - name: Update API URL in Secrets
+        if: steps.extract-endpoint.outputs.API_URL != ''
+        run: |
+          echo "Updating REACT_APP_API_URL in GitHub secrets is not directly possible via Actions"
+          echo "Please manually set the REACT_APP_API_URL secret to: ${{ steps.extract-endpoint.outputs.API_URL }}"
+          echo "This will ensure your frontend connects to the correct backend API" 
