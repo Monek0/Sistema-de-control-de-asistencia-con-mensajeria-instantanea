@@ -18,7 +18,7 @@ jobs:
     defaults:
       run:
         working-directory: Plataforma_Atrasos
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -30,11 +30,23 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/package-lock.json
 
-      - name: Install production dependencies only
-        run: npm i --omit=dev --no-optional
+      - name: Validate secrets
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "AWS_ACCESS_KEY_ID is not set. Please add this secret to your repository settings."
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "AWS_SECRET_ACCESS_KEY is not set. Please add this secret to your repository settings."
+            exit 1
+          fi
+          echo "AWS credentials are available."
 
-      - name: Install Serverless Framework
-        run: npm install -g serverless@3
+      - name: Install dependencies
+        run: |
+          # Install required serverless plugins and dependencies
+          npm install
+          npm install -g serverless@3
 
       - name: Debug environment (no sensitive info)
         run: |
@@ -42,6 +54,9 @@ jobs:
           echo "NPM version: $(npm -v)"
           echo "Working directory: $(pwd)"
           echo "AWS region to be used: us-east-2"
+          echo "Checking serverless plugins:"
+          ls -la node_modules/serverless-offline
+          ls -la node_modules/serverless-dotenv-plugin
           
       - name: Create AWS credentials file
         run: |
@@ -58,7 +73,15 @@ jobs:
       - name: Deploy to AWS Lambda
         run: |
           serverless --version
-          serverless deploy --stage production --verbose --region us-east-2
+          # Check if environment variables are set before deploying
+          echo "Checking if AWS credentials are available in environment..."
+          if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "AWS credentials are available in environment. Proceeding with deployment."
+            serverless deploy --stage production --verbose --region us-east-2
+          else
+            echo "AWS credentials are not available in environment. Deployment would fail."
+            exit 1
+          fi
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
