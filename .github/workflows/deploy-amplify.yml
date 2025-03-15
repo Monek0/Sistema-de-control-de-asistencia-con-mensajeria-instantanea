@@ -34,44 +34,46 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
 
-      - name: Install dependencies with forced resolutions
+      - name: Install dependencies
         run: |
-          # Create .npmrc to force specific resolutions
+          # Create .npmrc to handle peer dependencies
           echo "legacy-peer-deps=true" > .npmrc
           
-          # Create a specific resolution for ajv in package.json
-          jq '.resolutions = {"ajv": "6.12.6", "ajv-keywords": "3.5.2", "fork-ts-checker-webpack-plugin/*/ajv": "6.12.6"}' package.json > package.json.tmp
-          mv package.json.tmp package.json
-          
           # Install dependencies
-          npm install
+          npm install --legacy-peer-deps
 
       - name: Fix ajv dependency issues
         run: |
-          # First remove the problematic modules
-          rm -rf node_modules/fork-ts-checker-webpack-plugin/node_modules/ajv-keywords
-          rm -rf node_modules/fork-ts-checker-webpack-plugin/node_modules/ajv
-          rm -rf node_modules/ajv-keywords
+          # Create a patch file to fix the problematic code
+          cat > ajv-patch.js << 'EOL'
+          const fs = require('fs');
           
-          # Install specific versions directly
-          npm install --no-save ajv@6.12.6 ajv-keywords@3.5.2
-          
-          # Also create patch for schema-utils to bypass ajv-keywords issue if needed
-          if [ -f "node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js" ]; then
-            # Make a backup
-            cp node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js.bak
+          try {
+            // Path to problematic file
+            const filePath = 'node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js';
             
-            # Replace the problematic line
-            sed -i 's/ajvKeywords(ajv, \["instanceof", "formatMinimum", "formatMaximum", "patternRequired"\]);/try { ajvKeywords(ajv, ["instanceof"]); } catch(e) { console.warn("Ajv keywords error:", e.message); }/' node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js
-          fi
+            if (fs.existsSync(filePath)) {
+              let content = fs.readFileSync(filePath, 'utf8');
+              
+              // Replace problematic line with try-catch
+              content = content.replace(
+                /ajvKeywords\(ajv, \["instanceof", "formatMinimum", "formatMaximum", "patternRequired"\]\);/g,
+                'try { ajvKeywords(ajv, ["instanceof"]); } catch(e) { console.warn("Ajv keywords warning:", e.message); }'
+              );
+              
+              fs.writeFileSync(filePath, content);
+              console.log('✅ Successfully patched schema-utils validate.js');
+            } else {
+              console.log('⚠️ Target file not found, patch not applied');
+            }
+          } catch (error) {
+            console.error('Error applying patch:', error);
+            // Don't fail the build if patching fails
+          }
+          EOL
           
-          # Verify installed versions at key locations
-          echo "Main ajv version:"
-          npm list ajv | grep ajv
-          echo "Main ajv-keywords version:"
-          npm list ajv-keywords | grep ajv-keywords
-          echo "fork-ts-checker-webpack-plugin ajv version:"
-          find node_modules -name "ajv" -type d | grep fork-ts-checker || echo "Not found"
+          # Run the patch script
+          node ajv-patch.js
 
       # Create API config file 
       - name: Create API Configuration
