@@ -4,6 +4,7 @@ frontend:
     preBuild:
       commands:
         - echo "Installing dependencies..."
+        - rm -rf node_modules package-lock.json
         - npm cache clean --force
         - npm install --no-audit --no-fund --legacy-peer-deps --force
         - echo "Checking if ajv and ajv-keywords are installed correctly:"
@@ -11,7 +12,8 @@ frontend:
     build:
       commands:
         - echo "Building the React application..."
-        - npm run build
+        - echo "REACT_APP_API_URL=$REACT_APP_API_URL"
+        - NODE_OPTIONS=--max_old_space_size=4096 CI=false GENERATE_SOURCEMAP=false npm run build
   artifacts:
     baseDirectory: build
     files:
