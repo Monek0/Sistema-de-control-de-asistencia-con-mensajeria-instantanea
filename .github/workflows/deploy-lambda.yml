@@ -75,7 +75,7 @@ jobs:
           serverless --version
           # Check if environment variables are set before deploying
           echo "Checking if AWS credentials are available in environment..."
-          if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
+          if [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ] && [ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
             echo "AWS credentials are available in environment. Proceeding with deployment."
             serverless deploy --stage production --verbose --region us-east-2
           else
