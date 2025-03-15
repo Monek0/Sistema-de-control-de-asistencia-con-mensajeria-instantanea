@@ -19,6 +19,7 @@ jobs:
     defaults:
       run:
         working-directory: Plataforma_Atrasos
+        shell: /usr/bin/bash -e {0}
     
     steps:
       - name: Checkout repository
@@ -31,27 +32,26 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/package-lock.json
 
-      - name: Install dependencies
+      - name: Install production dependencies
         run: |
-          # Install production dependencies first
-          npm install --production --no-optional
+          # Install only production dependencies, explicitly excluding dev packages
+          npm ci --omit=dev --omit=optional --ignore-scripts
           
-          # Install required serverless plugins
-          npm install --no-save serverless-offline serverless-dotenv-plugin
+          # Install serverless plugins needed for deployment
+          npm install --no-save serverless-offline serverless-dotenv-plugin @vendia/serverless-express
           
           # Install serverless globally
           npm install -g serverless@3
-          
-          # Verify plugins installation
-          ls -la node_modules/serverless-offline || echo "serverless-offline not found"
-          ls -la node_modules/serverless-dotenv-plugin || echo "serverless-dotenv-plugin not found"
 
-      - name: Debug environment (no sensitive info)
+      - name: Verify dependencies
         run: |
           echo "Node version: $(node -v)"
           echo "NPM version: $(npm -v)"
           echo "Working directory: $(pwd)"
-          echo "AWS region to be used: us-east-2"
+          echo "Checking required packages:"
+          ls -la node_modules/serverless-offline || echo "serverless-offline not found"
+          ls -la node_modules/serverless-dotenv-plugin || echo "serverless-dotenv-plugin not found"
+          ls -la node_modules/@vendia/serverless-express || echo "@vendia/serverless-express not found"
           
       - name: Deploy to AWS Lambda
         run: |
