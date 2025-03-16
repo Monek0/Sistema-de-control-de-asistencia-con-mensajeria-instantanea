@@ -123,7 +123,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
 
-      # Use Amplify CLI to deploy the built artifacts
+      # Use AWS CLI with Amplify to deploy the built artifacts
       - name: Deploy to AWS Amplify
         run: |
           # Check if AMPLIFY_APP_ID is set
@@ -142,19 +142,30 @@ jobs:
             exit 1
           fi
           
-          # Zip the build directory for deployment
-          echo "Creating deployment zip file..."
-          cd build
-          zip -r ../deploy.zip *
+          # First, upload amplify.yml to configure app correctly
+          echo "Updating Amplify app configuration..."
+          aws amplify update-app \
+            --app-id "${{ secrets.AMPLIFY_APP_ID }}" \
+            --build-spec file://amplify.yml \
+            --region us-east-2
+          
+          # Create a special structure for the zip file that Amplify expects
+          echo "Creating Amplify-compliant deployment package..."
+          mkdir -p amplify-deploy/build
+          cp -r build/* amplify-deploy/build/
+          cp amplify.yml amplify-deploy/
+          
+          # Zip the entire structure
+          cd amplify-deploy
+          zip -r ../amplify-deploy.zip .
           cd ..
           
-          # Upload the artifact to Amplify
+          # Upload the special structure to Amplify
           echo "Deploying to Amplify..." 
           aws amplify start-deployment \
             --app-id "${{ secrets.AMPLIFY_APP_ID }}" \
             --branch-name main \
-            --file-map '{"baseDirectory":"/","files":{"**/*":"**/*"}}' \
-            --zip-file fileb://deploy.zip \
+            --zip-file fileb://amplify-deploy.zip \
             --region us-east-2
           
           echo "Deployment initiated. Check the AWS Amplify console for updates." 

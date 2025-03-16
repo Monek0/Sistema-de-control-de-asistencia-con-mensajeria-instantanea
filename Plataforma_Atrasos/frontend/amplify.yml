@@ -1,11 +1,15 @@
 version: 1
 frontend:
   phases:
+    preBuild:
+      commands:
+        - echo "Using manual deployment"
     build:
       commands:
         - echo "Files deployed directly from GitHub Actions"
   artifacts:
-    baseDirectory: /
+    # This is what Amplify is looking for - must match this exactly
+    baseDirectory: build
     files:
       - '**/*'
   customHeaders:
