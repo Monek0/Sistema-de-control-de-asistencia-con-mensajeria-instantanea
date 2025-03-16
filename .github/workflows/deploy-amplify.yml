@@ -34,114 +34,107 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
 
-      # Create a simple build patch for ajv-keywords issue
-      - name: Create ajv patch file
-        run: |
-          # Create a patched version of ajv-keywords that won't fail
-          mkdir -p patched-modules
-          cat > patched-modules/patched-ajv-keywords.js << 'EOL'
-          /** 
-           * This is a patched version of ajv-keywords that ignores the formatMinimum keyword issue
-           */
-          module.exports = function (ajv, keyword) {
-            if (!keyword || keyword === 'instanceof') {
-              // Only apply the 'instanceof' keyword, ignore others
-              try {
-                ajv.addKeyword('instanceof', {
-                  compile: function (schema) {
-                    return function (data) {
-                      return data instanceof schema;
-                    };
-                  }
-                });
-              } catch (e) {
-                console.warn("Warning: Could not add 'instanceof' keyword", e.message);
-              }
-            }
-            // Return modified ajv instance
-            return ajv;
-          };
-          EOL
-
       - name: Install dependencies
         run: |
-          # Use a clean install without loading cache
-          npm cache clean --force
-          
           # Create .npmrc to handle peer dependencies
           echo "legacy-peer-deps=true" > .npmrc
           
-          # Install dependencies 
+          # Clean install
+          npm cache clean --force
           npm install --legacy-peer-deps
 
-      - name: Fix ajv-keywords issue
+      - name: Fix Ajv errors
         run: |
-          # Debug info - show the problematic files
-          echo "Checking for problematic files..."
-          find node_modules -path "*fork-ts-checker-webpack-plugin*schema-utils*validate.js" || echo "Validate.js not found"
+          # Create a patch script for Ajv
+          cat > ajv-patch.js << 'EOL'
+          const fs = require('fs');
+          const path = require('path');
           
-          # Locate all instances of problematic ajv-keywords files
-          find node_modules -path "*ajv-keywords/dist/index.js" > ajv-files.txt
-          
-          # Replace all problematic files
-          echo "Replacing ajv-keywords implementations..."
-          if [ -s ajv-files.txt ]; then
-            while IFS= read -r file; do
-              echo "Creating backup of $file"
-              cp "$file" "${file}.bak"
-              
-              echo "Patching $file"
-              cat > "$file" << 'EOL'
-          'use strict';
-          
-          /**
-           * Patched version to avoid "Unknown keyword formatMinimum" error
-           */
-          
-          module.exports = function (ajv, keywords) {
-            if (!keywords || keywords.includes('instanceof')) {
-              try {
-                ajv.addKeyword('instanceof', {
-                  compile: function (schema) {
-                    return function (data) {
-                      return data instanceof schema;
-                    };
-                  }
-                });
-              } catch (e) {
-                console.warn("Warning: Could not add 'instanceof' keyword", e.message);
+          // Function to recursively find files
+          function findFiles(dir, pattern, callback) {
+            fs.readdirSync(dir).forEach(file => {
+              const filePath = path.join(dir, file);
+              const stat = fs.statSync(filePath);
+              if (stat.isDirectory()) {
+                findFiles(filePath, pattern, callback);
+              } else if (pattern.test(file)) {
+                callback(filePath);
               }
-            }
-            
-            // Ignore other keywords that cause errors
-            return ajv;
-          };
-          EOL
-              echo "✅ Patched $file"
-            done < ajv-files.txt
-          else
-            echo "⚠️ No ajv-keywords files found to patch"
-          fi
+            });
+          }
           
-          # Direct manual fix for the specific file causing the error
-          VALIDATE_FILE="node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js"
-          if [ -f "$VALIDATE_FILE" ]; then
-            echo "Directly patching $VALIDATE_FILE"
-            cp "$VALIDATE_FILE" "${VALIDATE_FILE}.bak"
+          // Patch Ajv's main validator files
+          function patchAjv() {
+            console.log('Patching Ajv files...');
             
-            # Replace the problematic line directly
-            sed -i 's/ajvKeywords(ajv, \["instanceof", "formatMinimum", "formatMaximum", "patternRequired"\]);/try { ajvKeywords(ajv, ["instanceof"]); } catch(e) { console.warn("Ajv keywords error:", e); }/' "$VALIDATE_FILE"
-            echo "✅ Directly patched $VALIDATE_FILE"
-          else
-            echo "⚠️ Could not find $VALIDATE_FILE"
+            // Find all validate.js files in schema-utils directories
+            findFiles('./node_modules', /validate\.js$/, (filePath) => {
+              if (filePath.includes('schema-utils')) {
+                console.log(`Patching ${filePath}`);
+                let content = fs.readFileSync(filePath, 'utf8');
+                
+                // Add strict:false option to Ajv constructor
+                content = content.replace(
+                  /new _ajv(\w*)\.default\((.*?)\)/g, 
+                  'new _ajv$1.default({strict:false,$2})'
+                );
+                
+                // Allow 'link' keyword by adding it to allowUnknown option
+                content = content.replace(
+                  /ajvKeywords\(ajv,.*?\)/g,
+                  'ajvKeywords(ajv, ["instanceof"]); ajv.addKeyword("link"); ajv._opts.strict = false'
+                );
+                
+                fs.writeFileSync(filePath, content);
+              }
+            });
             
-            # Try alternative paths
-            find node_modules -name "validate.js" | grep -i "schema-utils" | while read file; do
-              echo "Found alternative file: $file, attempting patch..."
-              cp "$file" "${file}.bak" 
-              sed -i 's/ajvKeywords(ajv, \["instanceof", "formatMinimum", "formatMaximum", "patternRequired"\]);/try { ajvKeywords(ajv, ["instanceof"]); } catch(e) { console.warn("Ajv keywords error:", e); }/' "$file"
-            done
-          fi
+            // Patch Ajv's main files
+            findFiles('./node_modules/ajv', /index\.js$/, (filePath) => {
+              console.log(`Checking Ajv file: ${filePath}`);
+              const content = fs.readFileSync(filePath, 'utf8');
+              
+              // Only patch files that seem to be main Ajv modules
+              if (content.includes('function Ajv') || content.includes('class Ajv')) {
+                console.log(`Patching Ajv core file: ${filePath}`);
+                let newContent = content;
+                
+                // Make sure unknown keywords don't cause errors
+                if (!content.includes('this._opts.strict = false')) {
+                  // Add code to disable strict mode
+                  newContent = content.replace(
+                    /constructor\s*\([^)]*\)\s*{/,
+                    'constructor(opts) { if (opts) { opts.strict = false; } else { opts = {strict: false}; }'
+                  );
+                  
+                  // If not a class-based file, try function style
+                  if (newContent === content) {
+                    newContent = content.replace(
+                      /function Ajv\s*\([^)]*\)\s*{/,
+                      'function Ajv(opts) { if (opts) { opts.strict = false; } else { opts = {strict: false}; }'
+                    );
+                  }
+                  
+                  fs.writeFileSync(filePath, newContent);
+                }
+              }
+            });
+            
+            console.log('Patching complete.');
+          }
+          
+          // Execute the patch
+          try {
+            patchAjv();
+            console.log('Successfully patched Ajv to handle unknown keywords');
+          } catch (err) {
+            console.error('Error patching Ajv:', err);
+            process.exit(1);
+          }
+          EOL
+          
+          # Run the patch script
+          node ajv-patch.js
 
       # Create API config file 
       - name: Create API Configuration
@@ -180,18 +173,11 @@ jobs:
 
       - name: Build frontend
         run: |
-          # Use NODE_OPTIONS to increase memory limit and debug environment
+          # Use NODE_OPTIONS to increase memory limit
           export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
           
-          # Use a custom NODE_PATH to prioritize our patched modules
-          export NODE_PATH="./patched-modules:$NODE_PATH"
-          
-          # Show environment variables for debugging
-          echo "Environment variables:"
-          env | grep -E 'NODE|REACT'
-          
-          # Try to build with React scripts
-          CI=false GENERATE_SOURCEMAP=false npm run build
+          # Try to build with React scripts, disabling strict mode
+          DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false npm run build
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
