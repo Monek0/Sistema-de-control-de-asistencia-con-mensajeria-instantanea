@@ -19,6 +19,7 @@ jobs:
   deploy:
     name: Deploy Frontend
     runs-on: ubuntu-latest
+    environment: main
     defaults:
       run:
         working-directory: Plataforma_Atrasos/frontend
