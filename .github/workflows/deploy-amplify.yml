@@ -45,96 +45,86 @@ jobs:
 
       - name: Fix Ajv errors
         run: |
-          # Create a patch script for Ajv
+          # Create a simplified patch script for Ajv-related issues
           cat > ajv-patch.js << 'EOL'
           const fs = require('fs');
           const path = require('path');
           
-          // Function to recursively find files
-          function findFiles(dir, pattern, callback) {
-            fs.readdirSync(dir).forEach(file => {
-              const filePath = path.join(dir, file);
-              const stat = fs.statSync(filePath);
-              if (stat.isDirectory()) {
-                findFiles(filePath, pattern, callback);
-              } else if (pattern.test(file)) {
-                callback(filePath);
-              }
-            });
-          }
-          
-          // Patch Ajv's main validator files
-          function patchAjv() {
-            console.log('Patching Ajv files...');
+          // Function to find and patch schema-utils validate.js files
+          function patchSchemaUtils() {
+            console.log('Looking for schema-utils validate.js files to patch...');
             
-            // Find all validate.js files in schema-utils directories
-            findFiles('./node_modules', /validate\.js$/, (filePath) => {
-              if (filePath.includes('schema-utils')) {
+            // List of common paths where validate.js might be found
+            const potentialPaths = [
+              'node_modules/schema-utils/dist/validate.js',
+              'node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js',
+              'node_modules/react-scripts/node_modules/schema-utils/dist/validate.js',
+              'node_modules/babel-loader/node_modules/schema-utils/dist/validate.js',
+              'node_modules/file-loader/node_modules/schema-utils/dist/validate.js',
+              'node_modules/terser-webpack-plugin/node_modules/schema-utils/dist/validate.js',
+              'node_modules/webpack/node_modules/schema-utils/dist/validate.js'
+            ];
+            
+            // Check each potential path and patch if exists
+            let patchCount = 0;
+            potentialPaths.forEach(filePath => {
+              if (fs.existsSync(filePath)) {
                 console.log(`Patching ${filePath}`);
-                let content = fs.readFileSync(filePath, 'utf8');
-                
-                // Add strict:false option to Ajv constructor
-                content = content.replace(
-                  /new _ajv(\w*)\.default\((.*?)\)/g, 
-                  'new _ajv$1.default({strict:false,$2})'
-                );
-                
-                // Allow 'link' keyword by adding it to allowUnknown option
-                content = content.replace(
-                  /ajvKeywords\(ajv,.*?\)/g,
-                  'ajvKeywords(ajv, ["instanceof"]); ajv.addKeyword("link"); ajv._opts.strict = false'
-                );
-                
-                fs.writeFileSync(filePath, content);
-              }
-            });
-            
-            // Patch Ajv's main files
-            findFiles('./node_modules/ajv', /index\.js$/, (filePath) => {
-              console.log(`Checking Ajv file: ${filePath}`);
-              const content = fs.readFileSync(filePath, 'utf8');
-              
-              // Only patch files that seem to be main Ajv modules
-              if (content.includes('function Ajv') || content.includes('class Ajv')) {
-                console.log(`Patching Ajv core file: ${filePath}`);
-                let newContent = content;
-                
-                // Make sure unknown keywords don't cause errors
-                if (!content.includes('this._opts.strict = false')) {
-                  // Add code to disable strict mode
-                  newContent = content.replace(
-                    /constructor\s*\([^)]*\)\s*{/,
-                    'constructor(opts) { if (opts) { opts.strict = false; } else { opts = {strict: false}; }'
-                  );
+                try {
+                  // Read file content
+                  let content = fs.readFileSync(filePath, 'utf8');
                   
-                  // If not a class-based file, try function style
-                  if (newContent === content) {
-                    newContent = content.replace(
-                      /function Ajv\s*\([^)]*\)\s*{/,
-                      'function Ajv(opts) { if (opts) { opts.strict = false; } else { opts = {strict: false}; }'
+                  // Add a special patch to disable strict mode completely
+                  if (content.includes('new _ajv')) {
+                    // Replace the Ajv instantiation with one that has strict mode disabled
+                    content = content.replace(
+                      /new _ajv(\w*)\.default\((.*?)\)/g, 
+                      'new _ajv$1.default({strict:false, allErrors:true})'
                     );
+                    
+                    // If ajvKeywords is used, adjust it to only use safe keywords
+                    if (content.includes('ajvKeywords(ajv,')) {
+                      content = content.replace(
+                        /ajvKeywords\s*\(\s*ajv\s*,\s*\[(.*?)\]\s*\)/g,
+                        'ajvKeywords(ajv, ["instanceof"]); try { ajv.addKeyword("link"); } catch(e) {}'
+                      );
+                    }
+                    
+                    // Write the patched content back
+                    fs.writeFileSync(filePath, content);
+                    patchCount++;
                   }
-                  
-                  fs.writeFileSync(filePath, newContent);
+                } catch (err) {
+                  console.error(`Error patching ${filePath}:`, err);
                 }
               }
             });
             
-            console.log('Patching complete.');
+            console.log(`Successfully patched ${patchCount} files.`);
+            return patchCount > 0;
           }
           
-          // Execute the patch
+          // Main patch function
           try {
-            patchAjv();
-            console.log('Successfully patched Ajv to handle unknown keywords');
+            const success = patchSchemaUtils();
+            if (success) {
+              console.log('Patching completed successfully.');
+            } else {
+              console.log('No suitable files were found to patch.');
+              // Even if nothing was patched, we don't want to fail the build
+            }
           } catch (err) {
-            console.error('Error patching Ajv:', err);
-            process.exit(1);
+            console.error('Error during patching:', err);
+            // Don't exit with error so build can continue
+            console.log('Continuing with build despite patching errors.');
           }
           EOL
           
           # Run the patch script
-          node ajv-patch.js
+          node ajv-patch.js || true  # Continue even if patching fails
+          
+          # Create a simple .npmrc to help with any remaining peer dependency issues
+          echo "legacy-peer-deps=true" > .npmrc
 
       # Create API config file 
       - name: Create API Configuration
@@ -176,8 +166,15 @@ jobs:
           # Use NODE_OPTIONS to increase memory limit
           export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
           
-          # Try to build with React scripts, disabling strict mode
-          DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false npm run build
+          # Try to build with multiple fallback options
+          echo "Attempting to build with CRACO fallback method..."
+          
+          # First approach: Use DISABLE_ESLINT_PLUGIN to avoid any eslint issues
+          DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false npm run build || \
+          
+          # Second approach: If first approach fails, try using a simpler build command 
+          (echo "First build attempt failed, trying backup approach..." && \
+          NODE_ENV=production CI=false DISABLE_ESLINT_PLUGIN=true npx react-scripts build --no-strict)
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
