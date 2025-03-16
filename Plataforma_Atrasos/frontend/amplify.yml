@@ -1,27 +1,18 @@
 version: 1
 frontend:
   phases:
-    preBuild:
-      commands:
-        - npm ci --legacy-peer-deps
     build:
       commands:
-        - echo "REACT_APP_API_URL=$REACT_APP_API_URL" > .env
-        - export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
-        - DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false npm run build
+        - echo "Files deployed directly from GitHub Actions"
   artifacts:
-    baseDirectory: build
+    baseDirectory: /
     files:
       - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-
   customHeaders:
-    - pattern: '**/*'
+    - pattern: '**/*.html'
       headers:
         - key: 'Cache-Control'
-          value: 'no-store'
+          value: 'no-cache'
     - pattern: 'static/**/*'
       headers:
         - key: 'Cache-Control'
@@ -30,11 +21,6 @@ frontend:
       headers:
         - key: 'Access-Control-Allow-Origin'
           value: '*'
-        - key: 'Access-Control-Allow-Headers'
-          value: 'Content-Type,Authorization'
-        - key: 'Access-Control-Allow-Methods'
-          value: 'GET,POST,PUT,DELETE,OPTIONS'
-
   redirects:
     - source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>'
       target: '/index.html'

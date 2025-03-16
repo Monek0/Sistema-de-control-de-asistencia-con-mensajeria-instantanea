@@ -134,18 +134,27 @@ jobs:
           
           echo "Using Amplify App ID: ${{ secrets.AMPLIFY_APP_ID }}"
           
-          # Create a zip of the build artifacts
-          echo "Creating deployment package..."
+          # Check that build directory exists
+          echo "Verifying build directory..."
+          if [ ! -d "build" ]; then
+            echo "Error: Build directory not found!"
+            ls -la
+            exit 1
+          fi
+          
+          # Zip the build directory for deployment
+          echo "Creating deployment zip file..."
           cd build
-          zip -r ../deploy.zip .
+          zip -r ../deploy.zip *
           cd ..
           
-          # Deploy to Amplify using the AWS CLI
-          echo "Starting Amplify deployment..."
+          # Upload the artifact to Amplify
+          echo "Deploying to Amplify..." 
           aws amplify start-deployment \
             --app-id "${{ secrets.AMPLIFY_APP_ID }}" \
             --branch-name main \
-            --source-url "fileb://$(pwd)/deploy.zip" \
+            --file-map '{"baseDirectory":"/","files":{"**/*":"**/*"}}' \
+            --zip-file fileb://deploy.zip \
             --region us-east-2
           
-          echo "Deployment initiated. Check the AWS Amplify console for build progress." 
+          echo "Deployment initiated. Check the AWS Amplify console for updates." 
