@@ -63,9 +63,21 @@ jobs:
       - name: Create API Configuration
         run: |
           mkdir -p src/config
+          
+          # Determine correct backend API URL with fallback
+          BACKEND_API_URL="${{ secrets.REACT_APP_API_URL }}"
+          if [ -z "$BACKEND_API_URL" ]; then
+            BACKEND_API_URL="https://backend-sistema-asistencia-production.us-east-2.amazonaws.com"
+            echo "Using fallback API URL: $BACKEND_API_URL"
+          else
+            echo "Using configured API URL from secrets"
+          fi
+          
+          # Create the API config file with the correct URL
           cat > src/config/api.js << EOL
           // API configuration file - Auto-generated during deployment
-          const API_URL = process.env.REACT_APP_API_URL || 'https://backend-sistema-asistencia-production.us-east-2.amazonaws.com';
+          const API_URL = process.env.REACT_APP_API_URL || '$BACKEND_API_URL';
+          console.log('Using API URL:', API_URL);
           export default API_URL;
           EOL
 
@@ -121,14 +133,19 @@ jobs:
           fi
           
           echo "Using Amplify App ID: ${{ secrets.AMPLIFY_APP_ID }}"
-
-          # Deploy using AWS CLI directly
-          echo "Starting deployment to Amplify..."
           
-          # Use the AWS CLI to directly start a deployment with the build directory
-          aws amplify start-job \
+          # Create a zip of the build artifacts
+          echo "Creating deployment package..."
+          cd build
+          zip -r ../deploy.zip .
+          cd ..
+          
+          # Deploy to Amplify using the AWS CLI
+          echo "Starting Amplify deployment..."
+          aws amplify start-deployment \
             --app-id "${{ secrets.AMPLIFY_APP_ID }}" \
             --branch-name main \
-            --job-type RELEASE
-            
-          echo "Amplify deployment started. Check the AWS Amplify console for build status." 
+            --source-url "fileb://$(pwd)/deploy.zip" \
+            --region us-east-2
+          
+          echo "Deployment initiated. Check the AWS Amplify console for build progress." 
