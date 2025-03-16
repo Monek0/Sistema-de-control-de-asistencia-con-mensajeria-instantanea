@@ -34,97 +34,29 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Clean npm cache and setup installation
         run: |
-          # Create .npmrc to handle peer dependencies
-          echo "legacy-peer-deps=true" > .npmrc
-          
-          # Clean install
-          npm cache clean --force
-          npm install --legacy-peer-deps
-
-      - name: Fix Ajv errors
-        run: |
-          # Create a simplified patch script for Ajv-related issues
-          cat > ajv-patch.js << 'EOL'
-          const fs = require('fs');
-          const path = require('path');
-          
-          // Function to find and patch schema-utils validate.js files
-          function patchSchemaUtils() {
-            console.log('Looking for schema-utils validate.js files to patch...');
-            
-            // List of common paths where validate.js might be found
-            const potentialPaths = [
-              'node_modules/schema-utils/dist/validate.js',
-              'node_modules/fork-ts-checker-webpack-plugin/node_modules/schema-utils/dist/validate.js',
-              'node_modules/react-scripts/node_modules/schema-utils/dist/validate.js',
-              'node_modules/babel-loader/node_modules/schema-utils/dist/validate.js',
-              'node_modules/file-loader/node_modules/schema-utils/dist/validate.js',
-              'node_modules/terser-webpack-plugin/node_modules/schema-utils/dist/validate.js',
-              'node_modules/webpack/node_modules/schema-utils/dist/validate.js'
-            ];
-            
-            // Check each potential path and patch if exists
-            let patchCount = 0;
-            potentialPaths.forEach(filePath => {
-              if (fs.existsSync(filePath)) {
-                console.log(`Patching ${filePath}`);
-                try {
-                  // Read file content
-                  let content = fs.readFileSync(filePath, 'utf8');
-                  
-                  // Add a special patch to disable strict mode completely
-                  if (content.includes('new _ajv')) {
-                    // Replace the Ajv instantiation with one that has strict mode disabled
-                    content = content.replace(
-                      /new _ajv(\w*)\.default\((.*?)\)/g, 
-                      'new _ajv$1.default({strict:false, allErrors:true})'
-                    );
-                    
-                    // If ajvKeywords is used, adjust it to only use safe keywords
-                    if (content.includes('ajvKeywords(ajv,')) {
-                      content = content.replace(
-                        /ajvKeywords\s*\(\s*ajv\s*,\s*\[(.*?)\]\s*\)/g,
-                        'ajvKeywords(ajv, ["instanceof"]); try { ajv.addKeyword("link"); } catch(e) {}'
-                      );
-                    }
-                    
-                    // Write the patched content back
-                    fs.writeFileSync(filePath, content);
-                    patchCount++;
-                  }
-                } catch (err) {
-                  console.error(`Error patching ${filePath}:`, err);
-                }
-              }
-            });
-            
-            console.log(`Successfully patched ${patchCount} files.`);
-            return patchCount > 0;
-          }
-          
-          // Main patch function
-          try {
-            const success = patchSchemaUtils();
-            if (success) {
-              console.log('Patching completed successfully.');
-            } else {
-              console.log('No suitable files were found to patch.');
-              // Even if nothing was patched, we don't want to fail the build
-            }
-          } catch (err) {
-            console.error('Error during patching:', err);
-            // Don't exit with error so build can continue
-            console.log('Continuing with build despite patching errors.');
-          }
+          # Create optimal .npmrc config
+          cat > .npmrc << EOL
+          legacy-peer-deps=true
+          fund=false
+          audit=false
           EOL
           
-          # Run the patch script
-          node ajv-patch.js || true  # Continue even if patching fails
+          # Clean npm cache for a fresh start
+          npm cache clean --force
+
+      - name: Install dependencies
+        run: |
+          # Install all dependencies including webpack explicitly
+          npm install --no-fund --no-audit --legacy-peer-deps
           
-          # Create a simple .npmrc to help with any remaining peer dependency issues
-          echo "legacy-peer-deps=true" > .npmrc
+          # Ensure webpack is installed
+          npm install webpack@5.90.3 --no-fund --no-audit --legacy-peer-deps
+          
+          # List installed packages for debugging
+          echo "Installed webpack version:"
+          npm list webpack
 
       # Create API config file 
       - name: Create API Configuration
@@ -166,15 +98,8 @@ jobs:
           # Use NODE_OPTIONS to increase memory limit
           export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
           
-          # Try to build with multiple fallback options
-          echo "Attempting to build with CRACO fallback method..."
-          
-          # First approach: Use DISABLE_ESLINT_PLUGIN to avoid any eslint issues
-          DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false npm run build || \
-          
-          # Second approach: If first approach fails, try using a simpler build command 
-          (echo "First build attempt failed, trying backup approach..." && \
-          NODE_ENV=production CI=false DISABLE_ESLINT_PLUGIN=true npx react-scripts build --no-strict)
+          # Disable eslint and other strict checks during build
+          DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false npm run build
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
