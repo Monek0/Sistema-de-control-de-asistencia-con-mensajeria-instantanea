@@ -5,13 +5,24 @@ applications:
       phases:
         preBuild:
           commands:
-            - npm ci --legacy-peer-deps
+            - echo "Node version: $(node -v) and NPM version: $(npm -v)"
+            - npm cache clean --force
+            - npm config set legacy-peer-deps true
+            - npm install --legacy-peer-deps --no-fund --no-audit
+            - echo "Installing webpack explicitly"
+            - npm install webpack@5.90.3 --legacy-peer-deps --no-fund --no-audit
+            - npm list webpack
         build:
           commands:
+            - echo "Setting up environment variables..."
             - echo "REACT_APP_API_URL=${REACT_APP_API_URL:-https://backend-sistema-asistencia-production.us-east-2.amazonaws.com}" > .env
             - echo "REACT_APP_BACKEND_STAGE=production" >> .env
+            - cat .env
+            - echo "Starting build with increased memory limit"
             - export NODE_OPTIONS="--max-old-space-size=4096 --no-warnings"
             - DISABLE_ESLINT_PLUGIN=true CI=false GENERATE_SOURCEMAP=false npm run build
+            - echo "Build completed - checking output directory"
+            - ls -la build || echo "Build directory not found!"
       artifacts:
         baseDirectory: build
         files:
