@@ -71,7 +71,7 @@ jobs:
             echo "    - '!__mocks__/**'" >> serverless.yml
             echo "    - '!frontend/**'" >> serverless.yml
             # Add explicit exclusions for big packages just in case
-            echo "    - '!node_modules/whatsapp-web.js/**'" >> serverless.yml
+            # echo "    - '!node_modules/whatsapp-web.js/**'" >> serverless.yml
             echo "    - '!node_modules/usb/**'" >> serverless.yml
             echo "    - '!node_modules/escpos*/**'" >> serverless.yml
             echo "    - '!node_modules/node-thermal-printer/**'" >> serverless.yml
@@ -97,7 +97,7 @@ jobs:
           echo "__mocks__/" >> .npmignore
           echo "frontend/" >> .npmignore
           # Explicitly ignore specific large packages
-          echo "node_modules/whatsapp-web.js/" >> .npmignore
+          # echo "node_modules/whatsapp-web.js/" >> .npmignore
           echo "node_modules/usb/" >> .npmignore
           echo "node_modules/escpos*/" >> .npmignore
           echo "node_modules/node-thermal-printer/" >> .npmignore
