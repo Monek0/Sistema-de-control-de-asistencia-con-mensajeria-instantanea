@@ -107,10 +107,10 @@ jobs:
       - name: Debug installed node_modules
         run: |
           if [ -d "node_modules/whatsapp-web.js" ]; then
-            echo "✅ whatsapp-web.js encontrado en node_modules"
+            echo "whatsapp-web.js encontrado en node_modules"
             ls -lh node_modules/whatsapp-web.js
           else
-            echo "❌ whatsapp-web.js NO está en node_modules"
+            echo "whatsapp-web.js NO está en node_modules"
           fi
 
       - name: Optimize node_modules
