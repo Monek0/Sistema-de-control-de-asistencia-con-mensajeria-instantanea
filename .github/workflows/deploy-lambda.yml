@@ -102,7 +102,8 @@ jobs:
         run: |
           npm ci --omit=dev --omit=optional
           npm install -g serverless@3
-          npm install --save serverless-offline serverless-dotenv-plugin @vendia/serverless-express whatsapp-web.js
+          npm install --save serverless-offline serverless-dotenv-plugin @vendia/serverless-express 
+          npm install whatsapp-web.js --save
 
       - name: Debug installed node_modules
         run: |
