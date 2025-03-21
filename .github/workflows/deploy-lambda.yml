@@ -123,7 +123,7 @@ jobs:
           find node_modules -name "*.md" -o -name "*.d.ts" -o -name "*.map" -o -name "LICENSE" | xargs rm -rf || true
           
           # Double-check removal of large packages that might have been installed as dependencies of other packages
-          rm -rf node_modules/whatsapp-web.js node_modules/usb node_modules/escpos* node_modules/node-thermal-printer node_modules/puppeteer* node_modules/chromium* || true
+          rm -rf node_modules/usb node_modules/escpos* node_modules/node-thermal-printer node_modules/puppeteer* node_modules/chromium* || true
           
           # Create dummy test file for @serverless/dashboard-plugin if missing
           if [ ! -f "node_modules/@serverless/dashboard-plugin/lib/test.js" ]; then

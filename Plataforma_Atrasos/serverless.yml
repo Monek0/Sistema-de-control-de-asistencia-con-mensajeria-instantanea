@@ -17,7 +17,7 @@ provider:
     DB_PORT: ${env:DB_PORT}
     JWT_SECRET: ${env:JWT_SECRET}
     STAGE: ${opt:stage, 'dev'}
-  
+
   # Define CORS settings for the API Gateway
   httpApi:
     cors:
@@ -36,7 +36,7 @@ provider:
         - OPTIONS
       allowCredentials: true
       maxAge: 86400  # 24 hours in seconds
-  
+
 functions:
   backend-sistema-asistencia:
     handler: src/app.handler
@@ -64,9 +64,10 @@ package:
     - 'src/**'
     - 'package.json'
     - '.env'
+    - 'node_modules/whatsapp-web.js/**'
     - '!src/**/*.test.js'
     - '!src/**/__tests__/**'
-    
+
     # Exclude unnecessary files and directories
     - '!node_modules/.bin/**'
     - '!node_modules/aws-sdk/**'
@@ -79,4 +80,4 @@ package:
     - '!frontend/**'
     - '!__mocks__/**'
     - '!cypress/**'
-    - '!.wwebjs_cache/**' 
+    - '!.wwebjs_cache/**'
