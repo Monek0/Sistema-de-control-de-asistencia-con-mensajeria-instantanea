@@ -113,7 +113,7 @@ jobs:
           npm install -g serverless@3
           
           # Install serverless plugins as dev dependencies
-          npm install --save-dev serverless-offline serverless-dotenv-plugin @vendia/serverless-express
+          npm install --save serverless-offline serverless-dotenv-plugin @vendia/serverless-express
 
       - name: Optimize node_modules
         run: |
