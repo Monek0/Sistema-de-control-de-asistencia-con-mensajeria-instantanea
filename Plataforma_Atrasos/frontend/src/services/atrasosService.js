@@ -1,5 +1,5 @@
 export const getAtrasos = async () => {
-    const response = await fetch('https://dr6mlrzheooq5qgtd2b3nddala0cwyxg.lambda-url.us-east-2.on.aws/api/atrasos', {
+    const response = await fetch('https://t7ygzclsbsxdxg5gpnqjrdgaxe0ywkxz.lambda-url.us-east-2.on.aws/api/atrasos', {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -14,7 +14,7 @@ export const getAtrasos = async () => {
 };
 
 export const createAtraso = async (atrasoData) => {
-    const response = await fetch('https://dr6mlrzheooq5qgtd2b3nddala0cwyxg.lambda-url.us-east-2.on.aws/api/atrasos', {
+    const response = await fetch('https://t7ygzclsbsxdxg5gpnqjrdgaxe0ywkxz.lambda-url.us-east-2.on.aws/api/atrasos', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
