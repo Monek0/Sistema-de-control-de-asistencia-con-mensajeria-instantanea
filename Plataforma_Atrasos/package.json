@@ -27,7 +27,8 @@
     "express": "^5.0.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.11.3",
-    "pdf-lib": "^1.17.1"
+    "pdf-lib": "^1.17.1",
+    "whatsapp-web.js": "^1.26.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.26.0",
