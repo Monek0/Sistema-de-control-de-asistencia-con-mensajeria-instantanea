@@ -25,7 +25,7 @@ jobs:
       run:
         working-directory: Plataforma_Atrasos
         shell: /usr/bin/bash -e {0}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -53,7 +53,6 @@ jobs:
             echo "    - '!node_modules/**/*.flow'" >> serverless.yml
             echo "    - '!node_modules/**/*.txt'" >> serverless.yml
             echo "    - '!node_modules/**/*.json'" >> serverless.yml
-            # Don't exclude test directories from serverless plugins
             echo "    - '!node_modules/**/test/**'" >> serverless.yml
             echo "    - 'node_modules/@serverless/**/test/**'" >> serverless.yml
             echo "    - '!node_modules/**/tests/**'" >> serverless.yml
@@ -70,8 +69,6 @@ jobs:
             echo "    - '!cypress/**'" >> serverless.yml
             echo "    - '!__mocks__/**'" >> serverless.yml
             echo "    - '!frontend/**'" >> serverless.yml
-            # Add explicit exclusions for big packages just in case
-            # echo "    - '!node_modules/whatsapp-web.js/**'" >> serverless.yml
             echo "    - '!node_modules/usb/**'" >> serverless.yml
             echo "    - '!node_modules/escpos*/**'" >> serverless.yml
             echo "    - '!node_modules/node-thermal-printer/**'" >> serverless.yml
@@ -85,7 +82,6 @@ jobs:
           echo ".git/" >> .npmignore
           echo ".github/" >> .npmignore
           echo "node_modules/**/test/" >> .npmignore
-          # Exclude Serverless plugins from test directory removal
           echo "!node_modules/@serverless/**/test/" >> .npmignore
           echo "node_modules/**/tests/" >> .npmignore
           echo "!node_modules/@serverless/**/tests/" >> .npmignore
@@ -96,8 +92,6 @@ jobs:
           echo "cypress/" >> .npmignore
           echo "__mocks__/" >> .npmignore
           echo "frontend/" >> .npmignore
-          # Explicitly ignore specific large packages
-          # echo "node_modules/whatsapp-web.js/" >> .npmignore
           echo "node_modules/usb/" >> .npmignore
           echo "node_modules/escpos*/" >> .npmignore
           echo "node_modules/node-thermal-printer/" >> .npmignore
@@ -106,47 +100,33 @@ jobs:
 
       - name: Install dependencies and serverless
         run: |
-          # Install only production dependencies
           npm ci --omit=dev --omit=optional
-          
-          # Install serverless globally
           npm install -g serverless@3
-          
-          # Install serverless plugins as dev dependencies
-          npm install --save serverless-offline serverless-dotenv-plugin @vendia/serverless-express
+          npm install --save serverless-offline serverless-dotenv-plugin @vendia/serverless-express whatsapp-web.js
+
+      - name: Debug installed node_modules
+        run: |
+          if [ -d "node_modules/whatsapp-web.js" ]; then
+            echo "✅ whatsapp-web.js encontrado en node_modules"
+            ls -lh node_modules/whatsapp-web.js
+          else
+            echo "❌ whatsapp-web.js NO está en node_modules"
+          fi
 
       - name: Optimize node_modules
         run: |
-          # Prune unnecessary files from node_modules
-          # Exclude serverless plugins from test directory pruning
           find node_modules -type d -name "test" -o -name "tests" | grep -v "@serverless" | xargs rm -rf || true
           find node_modules -name "*.md" -o -name "*.d.ts" -o -name "*.map" -o -name "LICENSE" | xargs rm -rf || true
-          
-          # Double-check removal of large packages that might have been installed as dependencies of other packages
           rm -rf node_modules/usb node_modules/escpos* node_modules/node-thermal-printer node_modules/puppeteer* node_modules/chromium* || true
-          
-          # Create dummy test file for @serverless/dashboard-plugin if missing
-          if [ ! -f "node_modules/@serverless/dashboard-plugin/lib/test.js" ]; then
-            mkdir -p node_modules/@serverless/dashboard-plugin/lib
-            echo "module.exports = {};" > node_modules/@serverless/dashboard-plugin/lib/test.js
-          fi
-          
-          # Check estimated package size
-          du -sh $(pwd) | cut -f1
-          echo "Listing largest packages in node_modules:"
-          du -h --max-depth=1 node_modules | sort -hr | head -20
 
       - name: Modify serverless.yml to disable dashboard
         run: |
-          # Disable Serverless Dashboard to avoid the plugin error
           if grep -q "org:" serverless.yml; then
             sed -i '/org:/d' serverless.yml
           fi
           if grep -q "app:" serverless.yml; then
             sed -i '/app:/d' serverless.yml
           fi
-          
-          # Add configuration to disable dashboard explicitly
           echo -e "\norg: false" >> serverless.yml
           echo "app: false" >> serverless.yml
 
@@ -172,13 +152,11 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           FRONTEND_URL: 'http://localhost:3000'
           FRONTEND_URL_PROD: ${{ secrets.AMPLIFY_FRONTEND_URL || 'https://main.dgv3bb9afnpc.amplifyapp.com' }}
-          
+
       - name: Extract API endpoint
         id: extract-endpoint
         run: |
-          # Get the API URL from API Gateway
           API_ID=$(aws apigateway get-rest-apis --region us-east-2 --query "items[?name=='plataforma-atrasos-backend-production'].id" --output text)
-          
           if [ -n "$API_ID" ]; then
             API_URL="https://${API_ID}.execute-api.us-east-2.amazonaws.com/production"
             echo "API_URL=$API_URL" >> $GITHUB_ENV
@@ -186,4 +164,4 @@ jobs:
             echo "✅ API URL: $API_URL"
           else
             echo "⚠️ Could not determine API URL"
-          fi 
+          fi
