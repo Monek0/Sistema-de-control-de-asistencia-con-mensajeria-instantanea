@@ -29,7 +29,7 @@
     "pg": "^8.11.3",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.15.1",
-    "puppeteer": "^18.2.1",
+    "puppeteer": "^22.8.2",
     "whatsapp-web.js": "^1.26.0"
   },
   "devDependencies": {
