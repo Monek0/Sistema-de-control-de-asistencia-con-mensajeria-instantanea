@@ -2,45 +2,61 @@
 const { Client, MessageMedia } = require('whatsapp-web.js');
 const QRCode = require('qrcode-terminal');
 const fs = require('fs');
+const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer-core');
 
-const client = new Client();
+let client;
 
-// Inicializar el cliente de WhatsApp
-const initializeClient = () => {
-    console.log('Inicializando cliente de WhatsApp...');
+const initializeClient = async () => {
+    console.log('Inicializando cliente de WhatsApp en entorno Lambda...');
+
+    const executablePath = await chromium.executablePath;
+
+    client = new Client({
+        puppeteer: {
+            executablePath,
+            headless: true,
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+        }
+    });
+
+    handleQRGeneration();
+    handleAuthentication();
+    handleDisconnection();
+
     client.initialize();
 };
 
-// Generar y mostrar el código QR en la terminal
 const handleQRGeneration = () => {
+    if (!client) return;
     client.on('qr', (qr) => {
         console.log('Escanea el código QR para conectar con WhatsApp');
         QRCode.generate(qr, { small: true });
     });
 };
 
-// Manejar la autenticación
 const handleAuthentication = () => {
+    if (!client) return;
     client.on('authenticated', () => {
         console.log('Cliente de WhatsApp autenticado exitosamente');
     });
 
     client.on('auth_failure', () => {
         console.log('Fallo en la autenticación, reiniciando...');
-        client.initialize(); // Reinicia el cliente si la autenticación falla
+        client.initialize();
     });
 };
 
-// Manejar la desconexión
 const handleDisconnection = () => {
+    if (!client) return;
     client.on('disconnected', (reason) => {
         console.log('Cliente de WhatsApp desconectado:', reason);
         client.destroy();
-        client.initialize(); // Reinicia el cliente para generar un nuevo código QR
+        client.initialize();
     });
 };
 
-// Función para enviar un PDF
 const sendPDF = async (number, filePath) => {
     try {
         const formattedNumber = number.includes('@c.us') ? number : `${number}@c.us`;
@@ -58,7 +74,6 @@ const sendPDF = async (number, filePath) => {
     }
 };
 
-// Exportar las funciones
 module.exports = {
     initializeClient,
     handleQRGeneration,

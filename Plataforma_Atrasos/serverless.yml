@@ -7,7 +7,7 @@ provider:
   runtime: nodejs18.x
   stage: ${opt:stage, 'dev'}
   region: us-east-2
-  memorySize: 256
+  memorySize: 512  # Aumentado por Puppeteer
   timeout: 30
   environment:
     DB_HOST: ${env:DB_HOST}
@@ -18,11 +18,10 @@ provider:
     JWT_SECRET: ${env:JWT_SECRET}
     STAGE: ${opt:stage, 'dev'}
 
-  # Define CORS settings for the API Gateway
   httpApi:
     cors:
       allowedOrigins:
-        - '*'  # In production you should restrict this to your specific domain
+        - '*'
       allowedHeaders:
         - Content-Type
         - Authorization
@@ -35,7 +34,7 @@ provider:
         - DELETE
         - OPTIONS
       allowCredentials: true
-      maxAge: 86400  # 24 hours in seconds
+      maxAge: 86400
 
 functions:
   backend-sistema-asistencia:
@@ -59,16 +58,17 @@ custom:
     file: ./serverless-output.json
 
 package:
+  excludeDevDependencies: false
   patterns:
-    # Include only what we need
     - 'src/**'
     - 'package.json'
+    - 'node_modules/**'
     - '.env'
     - 'node_modules/whatsapp-web.js/**'
-    - '!src/**/*.test.js'
-    - '!src/**/__tests__/**'
+    - 'node_modules/puppeteer-core/**'
+    - 'node_modules/chrome-aws-lambda/**'
 
-    # Exclude unnecessary files and directories
+    # Exclude unnecessary files
     - '!node_modules/.bin/**'
     - '!node_modules/aws-sdk/**'
     - '!node_modules/cypress/**'
