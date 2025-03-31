@@ -1,4 +1,4 @@
-name: Deploy Backend to AWS Lambda
+name: Deploy Backend to AWS Lambda Container
 
 on:
   push:
@@ -37,36 +37,14 @@ jobs:
           cache: 'npm'
           cache-dependency-path: Plataforma_Atrasos/package-lock.json
 
-      - name: Install dependencies
+      - name: Install serverless framework
+        run: npm install -g serverless@3
+
+      - name: Install serverless plugins
         run: |
-          npm ci --omit=dev --omit=optional
-          npm install -g serverless@3
-          npm install --save \
+          npm install --save-dev \
             serverless-offline \
-            serverless-dotenv-plugin \
-            @vendia/serverless-express \
-            whatsapp-web.js \
-            puppeteer-core \
-            chrome-aws-lambda
-
-      - name: Debug installed modules
-        run: |
-          ls -lh node_modules/whatsapp-web.js || echo "whatsapp-web.js not found"
-          ls -lh node_modules/puppeteer-core || echo "puppeteer-core not found"
-          ls -lh node_modules/chrome-aws-lambda || echo "chrome-aws-lambda not found"
-
-      - name: Clean up unnecessary packages
-        run: |
-          find node_modules -type d -name "test" -o -name "tests" | grep -v "@serverless" | xargs rm -rf || true
-          find node_modules -name "*.md" -o -name "*.d.ts" -o -name "*.map" -o -name "LICENSE" | xargs rm -rf || true
-          rm -rf node_modules/usb node_modules/escpos* node_modules/node-thermal-printer || true
-
-      - name: Modify serverless.yml to disable dashboard
-        run: |
-          sed -i '/^org:/d' serverless.yml || true
-          sed -i '/^app:/d' serverless.yml || true
-          echo -e "\norg: false" >> serverless.yml
-          echo "app: false" >> serverless.yml
+            serverless-dotenv-plugin
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -74,6 +52,33 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Create ECR repository if it doesn't exist
+        run: |
+          aws ecr describe-repositories --repository-names plataforma-atrasos-backend || \
+          aws ecr create-repository --repository-name plataforma-atrasos-backend
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: plataforma-atrasos-backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and push it to ECR
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+          # Also tag as latest
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          # Set image URI for serverless deployment
+          echo "ECR_IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
 
       - name: Deploy to AWS Lambda
         id: deploy
@@ -89,6 +94,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           FRONTEND_URL: 'http://localhost:3000'
           FRONTEND_URL_PROD: ${{ secrets.AMPLIFY_FRONTEND_URL || 'https://main.dgv3bb9afnpc.amplifyapp.com' }}
+          ECR_IMAGE_URI: ${{ env.ECR_IMAGE_URI }}
 
       - name: Extract API endpoint
         id: extract-endpoint

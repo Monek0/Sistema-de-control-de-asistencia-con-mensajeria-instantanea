@@ -1,29 +1,63 @@
 // src/controllers/whatsappController.js
-const { Client, MessageMedia } = require('whatsapp-web.js');
+const { Client, MessageMedia, RemoteAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode-terminal');
 const fs = require('fs');
 const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
+const { AwsS3Store } = require('wwebjs-aws-s3');
+const {
+    S3Client,
+    PutObjectCommand,
+    HeadObjectCommand,
+    GetObjectCommand,
+    DeleteObjectCommand
+} = require('@aws-sdk/client-s3');
 
 let client;
 
 const initializeClient = async () => {
-    console.log('Inicializando cliente de WhatsApp en entorno Lambda...');
+    console.log('Inicializando cliente de WhatsApp con AWS S3 RemoteAuth...');
 
     const executablePath = await chromium.executablePath;
+
+    // Configure S3 client
+    const s3 = new S3Client({
+        region: process.env.AWS_REGION || 'us-east-1',
+        credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+        }
+    });
+
+    // Create AWS S3 store for auth
+    const store = new AwsS3Store({
+        bucketName: 'plataforma-atrasos-backen-serverlessdeploymentbuck-nqhxx1vlzmed',
+        remoteDataPath: 'credentials/',
+        s3Client: s3,
+        putObjectCommand: PutObjectCommand,
+        headObjectCommand: HeadObjectCommand,
+        getObjectCommand: GetObjectCommand,
+        deleteObjectCommand: DeleteObjectCommand
+    });
 
     client = new Client({
         puppeteer: {
             executablePath,
             headless: true,
-            args: chromium.args,
+            args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
             defaultViewport: chromium.defaultViewport,
-        }
+        },
+        authStrategy: new RemoteAuth({
+            clientId: 'plataforma-atrasos-whatsapp',
+            store: store,
+            backupSyncIntervalMs: 300000 // Backup sync every 5 minutes
+        })
     });
 
     handleQRGeneration();
     handleAuthentication();
     handleDisconnection();
+    handleRemoteSessionSaved();
 
     client.initialize();
 };
@@ -57,6 +91,14 @@ const handleDisconnection = () => {
     });
 };
 
+// Handler for when remote session is saved
+const handleRemoteSessionSaved = () => {
+    if (!client) return;
+    client.on('remote_session_saved', () => {
+        console.log('Sesión remota guardada exitosamente en AWS S3');
+    });
+};
+
 const sendPDF = async (number, filePath) => {
     try {
         const formattedNumber = number.includes('@c.us') ? number : `${number}@c.us`;
@@ -79,5 +121,6 @@ module.exports = {
     handleQRGeneration,
     handleAuthentication,
     handleDisconnection,
+    handleRemoteSessionSaved,
     sendPDF,
 };

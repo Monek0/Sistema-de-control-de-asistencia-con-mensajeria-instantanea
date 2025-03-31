@@ -13,6 +13,7 @@ whatsappController.initializeClient();
 whatsappController.handleQRGeneration();
 whatsappController.handleAuthentication();
 whatsappController.handleDisconnection();
+whatsappController.handleRemoteSessionSaved();
 
 // Función para enviar un PDF
 const sendPDF = whatsappController.sendPDF;

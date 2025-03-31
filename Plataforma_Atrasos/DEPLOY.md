@@ -1,105 +1,165 @@
-# Guía de Despliegue - Plataforma de Control de Atrasos
+# Guía de Despliegue: Sistema de Control de Asistencia
 
-Esta guía detalla los pasos para desplegar la Plataforma de Control de Atrasos en AWS, separando el frontend (React) y el backend (Express.js).
+Esta guía explica cómo desplegar el backend y frontend del Sistema de Control de Asistencia en AWS.
 
 ## Requisitos Previos
 
-- Cuenta de AWS con acceso a Lambda, Amplify y otros servicios necesarios
-- AWS CLI instalado y configurado con credenciales válidas
-- Node.js (versión 16 o superior) y npm instalados
-- Serverless Framework instalado globalmente (`npm install -g serverless`)
+- Node.js v18 o superior
+- npm
+- AWS CLI configurado con las credenciales apropiadas
+- Docker instalado y configurado
+- Serverless Framework v3 (instalación global: `npm install -g serverless@3`)
 
-## Estructura del Proyecto
+## Configuración del Archivo .env
 
-- `frontend/`: Aplicación React
-- `src/`: Backend Express.js configurado para serverless
-
-## Configuración de Variables de Entorno
-
-### Backend (Lambda)
-
-Cree un archivo `.env` en la raíz del proyecto con las siguientes variables:
+Antes de iniciar cualquier proceso de despliegue, asegúrese de que el archivo `.env` contiene todas las variables de entorno necesarias:
 
 ```
-DB_HOST=su_host_db
-DB_USER=su_usuario_db
-DB_PASSWORD=su_password_db
-DB_NAME=su_nombre_db
-JWT_SECRET=su_clave_secreta_jwt
+DB_HOST=su-host-db
+DB_USER=su-usuario-db
+DB_PASSWORD=su-contraseña-db
+DB_NAME=su-nombre-db
+DB_PORT=5432
+JWT_SECRET=su-clave-secreta-jwt
+FRONTEND_URL=http://localhost:3000
+FRONTEND_URL_PROD=https://sudominio.com
 ```
 
-Para producción, configure estas variables en AWS Systems Manager Parameter Store o Lambda Environment Variables.
+## Despliegue Automatizado
 
-### Frontend (Amplify)
+Para simplificar el proceso de despliegue, este proyecto incluye un script que automatiza la mayoría de las tareas.
 
-Configure las variables de entorno en AWS Amplify:
+### Despliegue del Backend (Contenedor Lambda)
 
-1. En la consola de Amplify, vaya a su aplicación
-2. Navegue a "Environment variables"
-3. Agregue la variable `REACT_APP_API_URL` con la URL del backend 
+El backend ahora se despliega como un contenedor Docker en AWS Lambda, lo que proporciona mayor consistencia entre entornos de desarrollo y producción.
 
-## Despliegue
+1. **Construir y desplegar el contenedor**:
 
-Se proporciona un script de despliegue para facilitar el proceso:
+   ```bash
+   ./deploy.sh --backend
+   ```
+
+   Este comando:
+   - Construye una imagen Docker con el código del backend
+   - Sube la imagen a Amazon ECR (Elastic Container Registry)
+   - Despliega la función Lambda usando la imagen de contenedor
+   - Configura el API Gateway para exponer los endpoints
+
+2. **Despliegue en producción**:
+
+   ```bash
+   ./deploy.sh --backend prod
+   ```
+
+3. **Instalar dependencias y desplegar**:
+
+   ```bash
+   ./deploy.sh --backend --install
+   ```
+
+4. **Usar una imagen existente** (omitir construcción de imagen):
+
+   ```bash
+   ./deploy.sh --backend --skip-image
+   ```
+
+### Despliegue del Frontend
+
+1. **Preparar el frontend para despliegue**:
+
+   ```bash
+   ./deploy.sh --frontend
+   ```
+
+   Este comando compilará la aplicación React, dejándola lista para subir a AWS Amplify.
+
+2. **Instalar dependencias y construir**:
+
+   ```bash
+   ./deploy.sh --frontend --install
+   ```
+
+### Despliegue Completo (Backend + Frontend)
+
+Para desplegar ambos componentes a la vez:
 
 ```bash
-# Dar permisos de ejecución al script (solo la primera vez)
-chmod +x deploy.sh
-
-# Ver las opciones de despliegue
-./deploy.sh
-
-# Desplegar solo el backend (desarrollo)
-./deploy.sh --backend
-
-# Desplegar backend con instalación de dependencias
-./deploy.sh --backend --install
-
-# Desplegar backend en producción
-./deploy.sh --backend prod
-
-# Preparar el frontend para Amplify
-./deploy.sh --frontend
-
-# Desplegar todo
-./deploy.sh --all --install
+./deploy.sh --all
 ```
 
-## Despliegue Manual
-
-### Backend (Lambda)
+O para ambiente de producción:
 
 ```bash
-# Instalar dependencias
-npm install
-
-# Desplegar en AWS Lambda (desarrollo)
-npm run deploy:backend
-
-# Desplegar en producción
-npm run deploy:backend:prod
+./deploy.sh --all prod
 ```
 
-### Frontend (Amplify)
+## Despliegue Manual del Backend
 
-1. Navegue al directorio frontend:
+Si prefiere realizar un despliegue manual sin utilizar el script automatizado:
+
+1. **Construir la imagen Docker**:
+
    ```bash
-   cd frontend
+   # Iniciar sesión en ECR
+   aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin [AWS_ACCOUNT_ID].dkr.ecr.us-east-2.amazonaws.com
+   
+   # Construir la imagen
+   docker build -t [AWS_ACCOUNT_ID].dkr.ecr.us-east-2.amazonaws.com/plataforma-atrasos-backend:latest .
+   
+   # Subir la imagen a ECR
+   docker push [AWS_ACCOUNT_ID].dkr.ecr.us-east-2.amazonaws.com/plataforma-atrasos-backend:latest
    ```
 
-2. Instale las dependencias:
+2. **Desplegar con Serverless Framework**:
+
    ```bash
-   npm install
+   # Exportar la URI de la imagen
+   export ECR_IMAGE_URI=[AWS_ACCOUNT_ID].dkr.ecr.us-east-2.amazonaws.com/plataforma-atrasos-backend:latest
+   
+   # Desplegar
+   serverless deploy --stage production --region us-east-2
    ```
 
-3. Construya la aplicación:
-   ```bash
-   npm run build
-   ```
+## Solución de Problemas
 
-4. Despliegue en AWS Amplify:
-   - Opción 1: Conecte su repositorio Git a Amplify
-   - Opción 2: Suba manualmente el directorio `build` a través de la consola de Amplify
+### Problemas con el Contenedor
+
+- **Error de conectividad al WhatsApp**: Verifique que el contenedor tenga acceso a las dependencias necesarias para Puppeteer y WhatsApp Web.
+- **Límite de memoria**: Si la función Lambda falla, puede ser necesario aumentar el tamaño de memoria en el archivo `serverless.yml`.
+
+### Problemas de Despliegue
+
+- **Error al subir la imagen a ECR**: Verifique sus credenciales de AWS y asegúrese de tener los permisos necesarios.
+- **Falla al cargar dependencias**: El contenedor puede necesitar bibliotecas adicionales para Chrome/Puppeteer.
+
+## Monitorización y Logs
+
+Puede monitorear la función Lambda a través de la consola de AWS CloudWatch:
+
+```bash
+# Ver logs de la función Lambda
+aws logs filter-log-events --log-group-name /aws/lambda/backend-sistema-asistencia-production
+```
+
+O a través del comando serverless:
+
+```bash
+serverless logs -f backend-sistema-asistencia -t
+```
+
+## Recursos AWS Utilizados
+
+- **AWS Lambda**: Alojamiento del backend
+- **API Gateway**: Expone el backend como API REST
+- **AWS Amplify**: Alojamiento del frontend React
+- **RDS/Aurora**: Base de datos (configurar por separado)
+- **IAM**: Roles y políticas de permisos
+
+## Notas Adicionales
+
+- Después del despliegue del backend, anote la URL del API Gateway generada
+- Actualice la variable de entorno `REACT_APP_API_URL` en Amplify con esta URL
+- Para depuración local, use `npm run offline` para emular Lambda localmente
 
 ## Configuración de AWS Amplify
 

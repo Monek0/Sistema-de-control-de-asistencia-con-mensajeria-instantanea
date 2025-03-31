@@ -17,6 +17,8 @@ provider:
     DB_PORT: ${env:DB_PORT}
     JWT_SECRET: ${env:JWT_SECRET}
     STAGE: ${opt:stage, 'dev'}
+    FRONTEND_URL: ${env:FRONTEND_URL, 'http://localhost:3000'}
+    FRONTEND_URL_PROD: ${env:FRONTEND_URL_PROD, 'https://main.dgv3bb9afnpc.amplifyapp.com'}
 
   httpApi:
     cors:
@@ -38,7 +40,7 @@ provider:
 
 functions:
   backend-sistema-asistencia:
-    handler: src/app.handler
+    image: ${env:ECR_IMAGE_URI}
     name: backend-sistema-asistencia-${opt:stage, 'dev'}
     description: "Backend API for Sistema de Asistencia"
     events:
@@ -56,28 +58,3 @@ custom:
     httpPort: 3000
   output:
     file: ./serverless-output.json
-
-package:
-  excludeDevDependencies: false
-  patterns:
-    - 'src/**'
-    - 'package.json'
-    - 'node_modules/**'
-    - '.env'
-    - 'node_modules/whatsapp-web.js/**'
-    - 'node_modules/puppeteer-core/**'
-    - 'node_modules/chrome-aws-lambda/**'
-
-    # Exclude unnecessary files
-    - '!node_modules/.bin/**'
-    - '!node_modules/aws-sdk/**'
-    - '!node_modules/cypress/**'
-    - '!node_modules/@cypress/**'
-    - '!node_modules/@babel/**'
-    - '!node_modules/@testing-library/**'
-    - '!node_modules/babel-*/**'
-    - '!node_modules/jest*/**'
-    - '!frontend/**'
-    - '!__mocks__/**'
-    - '!cypress/**'
-    - '!.wwebjs_cache/**'
