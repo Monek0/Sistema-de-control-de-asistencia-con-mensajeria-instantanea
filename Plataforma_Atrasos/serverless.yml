@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs22.x
   stage: ${opt:stage, 'dev'}
   region: us-east-2
   memorySize: 512  # Aumentado por Puppeteer
@@ -19,6 +19,7 @@ provider:
     STAGE: ${opt:stage, 'dev'}
     FRONTEND_URL: ${env:FRONTEND_URL, 'http://localhost:3000'}
     FRONTEND_URL_PROD: ${env:FRONTEND_URL_PROD, 'https://main.dgv3bb9afnpc.amplifyapp.com'}
+    S3_BUCKET_NAME: ${env:S3_BUCKET_NAME, 'whatsapp-sessions-bucket'}
 
   httpApi:
     cors:

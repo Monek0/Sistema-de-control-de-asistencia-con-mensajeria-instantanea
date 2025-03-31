@@ -1,7 +1,9 @@
-FROM public.ecr.aws/lambda/nodejs:18
+FROM public.ecr.aws/lambda/nodejs:22
+
+RUN apt update && apt upgrade -y
 
 # Install Chrome dependencies for Puppeteer
-RUN yum install -y \
+RUN apt install -y \
     alsa-lib \
     atk \
     cups-libs \
@@ -28,12 +30,14 @@ COPY . ${LAMBDA_TASK_ROOT}/
 WORKDIR ${LAMBDA_TASK_ROOT}
 
 # Install Node.js dependencies
-RUN npm i
+RUN npm ci
 RUN npm install --save \
     @vendia/serverless-express \
     whatsapp-web.js \
     puppeteer-core \
-    chrome-aws-lambda
+    chrome-aws-lambda \
+    @aws-sdk/client-s3 \
+    wwebjs-aws-s3
 
 # Set the CMD to your handler
 CMD [ "src/app.handler" ] 
