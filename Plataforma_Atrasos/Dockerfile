@@ -65,7 +65,7 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 COPY package*.json ${LAMBDA_TASK_ROOT}/
 
 # Install Node.js dependencies
-RUN npm ci
+RUN npm i
 
 # Copy the rest of the application
 COPY . ${LAMBDA_TASK_ROOT}/
@@ -74,8 +74,7 @@ COPY . ${LAMBDA_TASK_ROOT}/
 RUN npm install --save \
     @vendia/serverless-express \
     whatsapp-web.js \
-    puppeteer-core \
-    chrome-aws-lambda \
+    puppeteer \
     @aws-sdk/client-s3 \
     wwebjs-aws-s3
 
