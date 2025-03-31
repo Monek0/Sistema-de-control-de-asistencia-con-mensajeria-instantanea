@@ -42,7 +42,6 @@ provider:
 functions:
   backend-sistema-asistencia:
     image: ${env:ECR_IMAGE_URI}
-    name: backend-sistema-asistencia-${opt:stage, 'dev'}
     description: "Backend API for Sistema de Asistencia"
     events:
       - http:
