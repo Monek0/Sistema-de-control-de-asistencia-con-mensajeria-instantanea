@@ -37,6 +37,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
 
+      - name: Create S3 bucket for WhatsApp sessions if it doesn't exist
+        run: |
+          S3_BUCKET_NAME="${{ secrets.S3_BUCKET_NAME || 'plataforma-atrasos-backen-serverlessdeploymentbuck-nqhxx1vlzmed' }}"
+          aws s3api head-bucket --bucket $S3_BUCKET_NAME 2>/dev/null || \
+          aws s3 mb s3://$S3_BUCKET_NAME --region us-east-2
+          echo "S3_BUCKET_NAME=$S3_BUCKET_NAME" >> $GITHUB_ENV
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -84,6 +91,7 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           FRONTEND_URL: 'http://localhost:3000'
           FRONTEND_URL_PROD: ${{ secrets.AMPLIFY_FRONTEND_URL || 'https://main.dgv3bb9afnpc.amplifyapp.com' }}
+          S3_BUCKET_NAME: ${{ env.S3_BUCKET_NAME || 'plataforma-atrasos-backen-serverlessdeploymentbuck-nqhxx1vlzmed' }}
           ECR_IMAGE_URI: ${{ env.ECR_IMAGE_URI }}
 
       - name: Extract API endpoint
