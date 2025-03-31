@@ -3,7 +3,7 @@
     "@aws-sdk/client-s3": "^3.777.0",
     "axios": "^1.8.4",
     "react-scripts": "^5.0.1",
-    "wwebjs-aws-s3": "^2.0.0"
+    "wwebjs-aws-s3": "^1.0.2"
   },
   "engines": {
     "node": ">=22.0.0"
