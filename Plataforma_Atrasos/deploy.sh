@@ -36,7 +36,7 @@ build_and_push_image() {
     aws ecr describe-repositories --repository-names $ECR_REPO_NAME --region $AWS_REGION || \
     aws ecr create-repository --repository-name $ECR_REPO_NAME --region $AWS_REGION
     
-    # Construir la imagen Docker
+    # Construir la imagen Docker con fecha y hora
     IMAGE_TAG=$(date +%Y%m%d%H%M%S)
     REPO_URI=$AWS_ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO_NAME
     
@@ -58,7 +58,7 @@ build_and_push_image() {
 deploy_backend() {
     print_header "Desplegando Backend en AWS Lambda como Container"
     
-    # Verificar si es una instalación nueva
+    # Instalar dependencias si es necesario
     if [ "$1" == "--install" ]; then
         echo "Instalando dependencias del backend..."
         npm install
