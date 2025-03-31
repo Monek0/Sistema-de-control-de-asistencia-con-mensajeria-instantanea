@@ -28,7 +28,7 @@ COPY . ${LAMBDA_TASK_ROOT}/
 WORKDIR ${LAMBDA_TASK_ROOT}
 
 # Install Node.js dependencies
-RUN npm ci
+RUN npm i
 RUN npm install --save \
     @vendia/serverless-express \
     whatsapp-web.js \
