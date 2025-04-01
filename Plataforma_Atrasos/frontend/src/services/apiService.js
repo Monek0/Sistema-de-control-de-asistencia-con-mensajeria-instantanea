@@ -6,8 +6,10 @@ const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
   timeout: 10000, // 10 seconds timeout
+  withCredentials: false, // Important for CORS requests to external domains
 });
 
 // Request interceptor to add auth token
@@ -31,6 +33,13 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
+    
+    // Log CORS and other errors for debugging
+    if (error.message === 'Network Error') {
+      console.error('CORS or Network Error:', error);
+      // You could add custom handling here
+    }
+    
     return Promise.reject(error);
   }
 );

@@ -1,4 +1,5 @@
 // API URL Configuration
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+import { API_URL } from './env';
 
+// Export the API URL from our centralized environment configuration
 export default API_URL; 
