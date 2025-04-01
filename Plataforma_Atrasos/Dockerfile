@@ -76,7 +76,9 @@ RUN npm install --save \
     whatsapp-web.js \
     puppeteer \
     @aws-sdk/client-s3 \
-    wwebjs-aws-s3
+    wwebjs-aws-s3 \
+    qrcode-terminal \
+    dotenv \
 
 # Add the Lambda Runtime Interface Emulator
 ADD https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie /usr/bin/aws-lambda-rie
