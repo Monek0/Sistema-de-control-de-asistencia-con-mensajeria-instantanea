@@ -1,7 +1,7 @@
 const { Client, RemoteAuth } = require('whatsapp-web.js');
 const { S3 } = require('@aws-sdk/client-s3');
 const store = require('wwebjs-aws-s3');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 
 // Initialize the S3 client
 const s3Client = new S3({
@@ -21,9 +21,9 @@ const initializeWhatsAppClient = async (sessionId = 'default-session') => {
     
     // Set up the browser instance
     const browser = await puppeteer.launch({
-      args: chromium.args,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: puppeteer.executablePath(),
+      headless: true,
       ignoreHTTPSErrors: true,
     });
 

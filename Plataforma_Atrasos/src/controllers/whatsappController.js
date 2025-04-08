@@ -1,7 +1,7 @@
 const { Client, MessageMedia, RemoteAuth } = require('whatsapp-web.js');
 // const QRCode = require('qrcode-terminal'); // Eliminado
 const fs = require('fs');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const { AwsS3Store } = require('wwebjs-aws-s3');
 const {
     S3Client,
@@ -16,7 +16,7 @@ let client;
 const initializeClient = async () => {
     console.log('Inicializando cliente de WhatsApp con AWS S3 RemoteAuth...');
 
-    const executablePath = await chromium.executablePath;
+    const executablePath = puppeteer.executablePath();
 
     // Configure S3 client
     const s3 = new S3Client({
@@ -42,8 +42,8 @@ const initializeClient = async () => {
         puppeteer: {
             executablePath,
             headless: true,
-            args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
-            defaultViewport: chromium.defaultViewport,
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+            defaultViewport: null,
         },
         authStrategy: new RemoteAuth({
             clientId: 'plataforma-atrasos-whatsapp',
