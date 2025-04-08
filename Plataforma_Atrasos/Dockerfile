@@ -77,7 +77,6 @@ RUN npm install --save \
     puppeteer \
     @aws-sdk/client-s3 \
     wwebjs-aws-s3 \
-    qrcode-terminal \
     dotenv 
 
 # Add the Lambda Runtime Interface Emulator
