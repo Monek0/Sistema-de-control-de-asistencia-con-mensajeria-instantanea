@@ -2,7 +2,6 @@ const { Client, RemoteAuth } = require('whatsapp-web.js');
 const { S3 } = require('@aws-sdk/client-s3');
 const store = require('wwebjs-aws-s3');
 const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
 
 // Initialize the S3 client
 const s3Client = new S3({

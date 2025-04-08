@@ -1,7 +1,6 @@
 const { Client, MessageMedia, RemoteAuth } = require('whatsapp-web.js');
 // const QRCode = require('qrcode-terminal'); // Eliminado
 const fs = require('fs');
-const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
 const { AwsS3Store } = require('wwebjs-aws-s3');
 const {
