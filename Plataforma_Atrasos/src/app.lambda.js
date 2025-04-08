@@ -1,18 +1,18 @@
-const { handler } = require('./app');
 const awsLambdaFastify = require('@vendia/serverless-express');
+const app = require('./app'); // Asegúrate de que este archivo exporte una instancia de express()
 
-// Export the handler function
-exports.handler = awsLambdaFastify({ handler });
+// Crear el handler a partir de tu app de Express
+const handler = awsLambdaFastify({ app });
 
-// For local development and direct invocation
+// Exportar para AWS Lambda
+exports.handler = handler;
+
+// Para desarrollo local (opcional)
 if (require.main === module) {
-  // This will be used when the script is run directly
   console.log('Starting AWS Lambda handler in standalone mode');
-  
-  // Configure a simple event loop to keep the container alive
-  // This is useful for local development and troubleshooting
+
   const keepAlive = () => {
     setTimeout(keepAlive, 60000);
   };
   keepAlive();
-} 
+}
