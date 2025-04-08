@@ -1,7 +1,6 @@
 const pool = require('../config/db');
 const pdfController = require('./PDFController');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
-const QRCode = require('qrcode-terminal');
 const fs = require('fs');
 const { startOfWeek, endOfWeek } = require('date-fns');
 const whatsappController = require('./whatsappController');

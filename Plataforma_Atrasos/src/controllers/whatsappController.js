@@ -1,6 +1,5 @@
-// src/controllers/whatsappController.js
 const { Client, MessageMedia, RemoteAuth } = require('whatsapp-web.js');
-const QRCode = require('qrcode-terminal');
+// const QRCode = require('qrcode-terminal'); // Eliminado
 const fs = require('fs');
 const chromium = require('chrome-aws-lambda');
 const puppeteer = require('puppeteer-core');
@@ -65,8 +64,8 @@ const initializeClient = async () => {
 const handleQRGeneration = () => {
     if (!client) return;
     client.on('qr', (qr) => {
-        console.log('Escanea el código QR para conectar con WhatsApp');
-        QRCode.generate(qr, { small: true });
+        console.log('Escanea el siguiente código QR con WhatsApp Web:');
+        console.log(qr); // Solo imprimimos el string del QR en texto plano
     });
 };
 
@@ -91,7 +90,6 @@ const handleDisconnection = () => {
     });
 };
 
-// Handler for when remote session is saved
 const handleRemoteSessionSaved = () => {
     if (!client) return;
     client.on('remote_session_saved', () => {
