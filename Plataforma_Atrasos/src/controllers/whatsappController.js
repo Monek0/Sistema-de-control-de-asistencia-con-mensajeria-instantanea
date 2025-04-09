@@ -1,7 +1,7 @@
 const { Client, MessageMedia, RemoteAuth } = require('whatsapp-web.js');
-// const QRCode = require('qrcode-terminal'); // Eliminado
 const fs = require('fs');
-const puppeteer = require('puppeteer'); // Usamos puppeteer completo
+const puppeteer = require('puppeteer'); // puppeteer completo
+const path = require('path');
 const { AwsS3Store } = require('wwebjs-aws-s3');
 const {
   S3Client,
@@ -12,16 +12,18 @@ const {
 } = require('@aws-sdk/client-s3');
 
 let client;
-let ioSocket = null; // Para emitir el QR vía socket.io
+let ioSocket = null; // WebSocket (socket.io) para emitir QR
 
+// Conectar socket.io
 const setSocket = (io) => {
   ioSocket = io;
 };
 
+// Inicializar cliente WhatsApp
 const initializeClient = async () => {
   console.log('Inicializando cliente de WhatsApp con AWS S3 RemoteAuth...');
 
-  // Configurar cliente S3
+  // Cliente S3
   const s3 = new S3Client({
     region: process.env.AWS_REGION || 'us-east-1',
     credentials: {
@@ -30,7 +32,7 @@ const initializeClient = async () => {
     }
   });
 
-  // Crear store para sesión remota
+  // Store remoto
   const store = new AwsS3Store({
     bucketName: 'plataforma-atrasos-backen-serverlessdeploymentbuck-nqhxx1vlzmed',
     remoteDataPath: 'credentials/',
@@ -41,6 +43,7 @@ const initializeClient = async () => {
     deleteObjectCommand: DeleteObjectCommand
   });
 
+  // Cliente WhatsApp
   client = new Client({
     puppeteer: {
       headless: true,
@@ -49,6 +52,7 @@ const initializeClient = async () => {
     authStrategy: new RemoteAuth({
       clientId: 'plataforma-atrasos-whatsapp',
       store: store,
+      dataPath: path.join('/tmp', '.wwebjs_auth'), // ✅ evita ENOENT en Lambda
       backupSyncIntervalMs: 300000
     })
   });
@@ -61,11 +65,12 @@ const initializeClient = async () => {
   client.initialize();
 };
 
+// QR generado → enviar por WebSocket (base64)
 const handleQRGeneration = () => {
   if (!client) return;
 
   client.on('qr', async (qr) => {
-    console.log('QR de WhatsApp generado.');
+    console.log('QR generado. Emitiendo al frontend...');
     if (ioSocket) {
       const QRCode = require('qrcode');
       try {
@@ -78,40 +83,43 @@ const handleQRGeneration = () => {
   });
 };
 
+// Autenticación
 const handleAuthentication = () => {
   if (!client) return;
 
   client.on('authenticated', () => {
-    console.log('Cliente de WhatsApp autenticado correctamente');
+    console.log('Cliente autenticado');
     if (ioSocket) ioSocket.emit('authenticated');
   });
 
   client.on('auth_failure', () => {
-    console.log('Fallo en la autenticación. Reiniciando...');
+    console.log('Fallo de autenticación. Reiniciando...');
     if (ioSocket) ioSocket.emit('auth_failure');
     client.initialize();
   });
 };
 
+// Desconexión
 const handleDisconnection = () => {
   if (!client) return;
 
   client.on('disconnected', (reason) => {
-    console.log('Cliente de WhatsApp desconectado:', reason);
+    console.log('Desconectado:', reason);
     if (ioSocket) ioSocket.emit('disconnected', reason);
     client.destroy();
     client.initialize();
   });
 };
 
+// Sesión remota guardada
 const handleRemoteSessionSaved = () => {
   if (!client) return;
-
   client.on('remote_session_saved', () => {
-    console.log('Sesión remota guardada exitosamente en AWS S3');
+    console.log('Sesión remota guardada en S3');
   });
 };
 
+// Enviar PDF por WhatsApp
 const sendPDF = async (number, filePath) => {
   try {
     const formattedNumber = number.includes('@c.us') ? number : `${number}@c.us`;
@@ -122,13 +130,14 @@ const sendPDF = async (number, filePath) => {
       await client.sendMessage(formattedNumber, media);
       console.log('PDF enviado exitosamente');
     } else {
-      console.error('El archivo PDF no existe o la ruta es incorrecta');
+      console.error('El archivo no existe o la ruta es incorrecta');
     }
   } catch (error) {
-    console.error('Error al enviar el PDF por WhatsApp:', error);
+    console.error('Error al enviar el PDF:', error);
   }
 };
 
+// Exportaciones
 module.exports = {
   initializeClient,
   handleQRGeneration,
