@@ -127,7 +127,7 @@ const sendPDF = async (number, filePath) => {
 
     if (filePath && fs.existsSync(filePath)) {
       const media = await MessageMedia.fromFilePath(filePath);
-      await client.sendMessage(formattedNumber, media);
+      await client.sendMessage(formattedNumber, media)
       console.log('PDF enviado exitosamente');
     } else {
       console.error('El archivo no existe o la ruta es incorrecta');
