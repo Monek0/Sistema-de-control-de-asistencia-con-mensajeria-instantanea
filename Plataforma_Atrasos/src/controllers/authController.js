@@ -5,16 +5,18 @@ const pool = require('../config/db');
 exports.login = async (req, res) => {
     const { rutUsername, contraseña } = req.body;
 
+
+    console.log(rutUsername, contraseña)
     try {
         const result = await pool.query('SELECT * FROM usuarios WHERE rut_username = $1', [rutUsername]);
-        
+        console.log(result)
         if (result.rows.length === 0) {
             return res.status(400).json({ message: 'Usuario no encontrado' });
         }
 
         const user = result.rows[0];
-
-        const isMatch = await bcrypt.compare(contraseña, user.contraseña);
+        console.log(user)
+        const isMatch = await bcrypt.compare(contraseña, user.contrasena);
         if (!isMatch) {
             return res.status(400).json({ message: 'Contraseña incorrecta' });
         }

@@ -18,7 +18,7 @@ const app = express();
 
 // Configuración de CORS mejorada
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.FRONTEND_URL || 'http://localhost:3001',
   process.env.FRONTEND_URL_PROD
 ].filter(Boolean); // Elimina valores falsos (undefined/null)
 

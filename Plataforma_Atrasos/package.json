@@ -26,11 +26,12 @@
     "dotenv": "^16.4.7",
     "express": "^5.0.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.14.1",
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.16.0",
+    "pg": "^8.14.1",
     "puppeteer": "^21.3.8",
-    "whatsapp-web.js": "^1.26.0"
+    "whatsapp-web.js": "^1.26.0",
+    "wwebjs-aws-s3": "^1.0.2"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.26.9",
