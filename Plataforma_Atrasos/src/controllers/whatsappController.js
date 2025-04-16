@@ -12,11 +12,25 @@ const {
 } = require('@aws-sdk/client-s3');
 
 let client;
-let ioSocket = null; // WebSocket (socket.io) para emitir QR
+let ioSocket = null; // WebSocket (socket.io) para emitir eventos al frontend
 
-// Conectar socket.io
+// Conectar socket.io y configurar el listener para el evento "logout"
 const setSocket = (io) => {
   ioSocket = io;
+  // Escucha la conexión de nuevos clientes
+  ioSocket.on('connection', (socket) => {
+    console.log('Cliente Socket.IO conectado, ID:', socket.id);
+    // Si se emite el evento "logout" desde el frontend, cerrar la sesión de WhatsApp
+    socket.on('logout', () => {
+      console.log('Logout event received from client', socket.id);
+      if (client) {
+        client.destroy(); // Cierra la sesión actual
+        client.initialize(); // Reinicia el cliente para volver a generar el QR
+      }
+      // Notifica al cliente que la sesión se ha cerrado
+      socket.emit('disconnected', 'Sesión cerrada por el usuario');
+    });
+  });
 };
 
 // Inicializar cliente WhatsApp
@@ -127,7 +141,7 @@ const sendPDF = async (number, filePath) => {
 
     if (filePath && fs.existsSync(filePath)) {
       const media = await MessageMedia.fromFilePath(filePath);
-      await client.sendMessage(formattedNumber, media)
+      await client.sendMessage(formattedNumber, media);
       console.log('PDF enviado exitosamente');
     } else {
       console.error('El archivo no existe o la ruta es incorrecta');
@@ -137,7 +151,6 @@ const sendPDF = async (number, filePath) => {
   }
 };
 
-// Exportaciones
 module.exports = {
   initializeClient,
   handleQRGeneration,
