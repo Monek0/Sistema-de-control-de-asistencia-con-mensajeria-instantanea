@@ -143,14 +143,14 @@ const AttendanceReport = () => {
                             </thead>
                             <tbody>
                                 {reportes.map((reporte) => (
-                                    <tr key={reporte.COD_ATRASOS}>
-                                        <td style={styles.td}>{reporte.RUT_ALUMNO}</td>
-                                        <td style={styles.td}>{reporte.NOMBRE_COMPLETO || 'No disponible'}</td>
-                                        <td style={styles.td}>{reporte.NOMBRE_CURSO || 'No disponible'}</td>
+                                    <tr key={reporte.cod_atrasos}>
+                                        <td style={styles.td}>{reporte.rut_alumno}</td>
+                                        <td style={styles.td}>{reporte.nombre_completo || 'No disponible'}</td>
+                                        <td style={styles.td}>{reporte.nombre_curso || 'No disponible'}</td>
                                         <td style={styles.td}>
-                                            {reporte.TIPO_JUSTIFICATIVO && reporte.TIPO_JUSTIFICATIVO !== 'Sin justificativo' ? reporte.TIPO_JUSTIFICATIVO : 'No'}
+                                            {reporte.tipo_justificativo && reporte.tipo_justificativo !== 'Sin justificativo' ? reporte.tipo_justificativo : 'No'}
                                         </td>
-                                        <td style={styles.td}>{new Date(reporte.FECHA_ATRASOS).toLocaleDateString()}</td>
+                                        <td style={styles.td}>{new Date(reporte.fecha_atrasos).toLocaleDateString()}</td>
                                     </tr>
                                 ))}
                             </tbody>

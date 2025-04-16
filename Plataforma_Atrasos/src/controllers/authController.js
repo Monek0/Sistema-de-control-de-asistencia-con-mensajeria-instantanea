@@ -3,9 +3,9 @@ const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
 
 exports.login = async (req, res) => {
-    const { rutUsername, contraseña } = req.body;
+    const { rutUsername, contrasena } = req.body;
 
-    console.log(rutUsername, contraseña);
+    console.log(rutUsername, contrasena);
 
     try {
         const result = await pool.query('SELECT * FROM usuarios WHERE rut_username = $1', [rutUsername]);
@@ -15,15 +15,15 @@ exports.login = async (req, res) => {
         }
 
         const user = result.rows[0];
-        const isMatch = await bcrypt.compare(contraseña, user.contrasena);
+        const isMatch = await bcrypt.compare(contrasena, user.contrasena);
 
         if (!isMatch) {
             return res.status(400).json({ message: 'Contraseña incorrecta' });
         }
 
-        const token = jwt.sign({ id: user.rut_username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ id: user.rut_username, role: user.cod_rol }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ token });
+        res.json({ token, role: user.cod_rol });
     } catch (err) {
         console.error('Error de base de datos:', err);
         return res.status(500).json({ message: 'Error en la base de datos' });

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import axios from 'axios';
+import {jwtDecode} from 'jwt-decode';
 
 import controlIcon from '../assets/icons/control.png';
 import reportIcon from '../assets/icons/report.png';
@@ -19,6 +20,7 @@ const HomePage = () => {
   const [activeMenu, setActiveMenu] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [userRole, setUserRole] = useState(null); 
 
   useEffect(() => {
     const handleResize = () => {
@@ -54,6 +56,19 @@ const HomePage = () => {
       }
     };
     fetchUserName();
+  }, []);
+
+  // Extraer el rol del token (si existe) al cargar la HomePage
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUserRole(decoded.role);
+      } catch (err) {
+        console.error('Error decodificando el token:', err);
+      }
+    }
   }, []);
 
   const handleMenuClick = (action) => {
@@ -214,7 +229,9 @@ const HomePage = () => {
           <MenuItem icon={controlIcon} text="Control de atrasos" action="attendance" />
           <MenuItem icon={reportIcon} text="Reportes" action="reports" />
           <MenuItem icon={messageIcon} text="Mensajería" action="atrasos" />
-          <MenuItem icon={agregarIcon} text="Registrar Usuario" action="registro" />
+          {userRole && (userRole === 1 || userRole === 3) && (
+            <MenuItem icon={agregarIcon} text="Registrar Usuario" action="registro" />
+          )}
           <img src={logo} alt="Logo" style={styles.logo} />
         </div>
       </div>
@@ -238,7 +255,9 @@ const HomePage = () => {
         <div style={styles.contentArea}>
           {activeMenu === 'home' && (
             <div className="text-center md:text-left">
-              <h3 className="text-2xl font-bold mb-4">Bienvenido, {userName}!</h3>
+              <h3 className="text-2xl font-bold mb-4">
+                Bienvenido, {userName}!
+              </h3>
             </div>
           )}
           {activeMenu === 'attendance' && <AttendancePage />}

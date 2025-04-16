@@ -142,11 +142,11 @@ const AttendanceReportCustomRange = () => {
                                     <tbody>
                                         {reportData.atrasos.map((atraso, index) => (
                                             <tr key={index} style={styles.tr}>
-                                                <td style={styles.td}>{atraso.RUT_ALUMNO}</td>
-                                                <td style={styles.td}>{atraso.NOMBRE_COMPLETO}</td>
-                                                <td style={styles.td}>{atraso.NOMBRE_CURSO}</td>
-                                                <td style={styles.td}>{new Date(atraso.FECHA_ATRASOS).toLocaleString()}</td>
-                                                <td style={styles.td}>{atraso.JUSTIFICATIVO ? 'Sí' : 'No'}</td>
+                                                <td style={styles.td}>{atraso.rut_alumno}</td>
+                                                <td style={styles.td}>{atraso.nombre_completo}</td>
+                                                <td style={styles.td}>{atraso.nombre_curso}</td>
+                                                <td style={styles.td}>{new Date(atraso.fecha_atrasos).toLocaleString()}</td>
+                                                <td style={styles.td}>{atraso.tipo_justificativo ? 'Sí' : 'No'}</td>
                                             </tr>
                                         ))}
                                     </tbody>

@@ -1,7 +1,7 @@
 // src/pages/ReportsPage.js
 
 import React, { useEffect, useState } from 'react';
-import AttendanceReport from '../components/AttendanceReport'; // Verifica que la ruta sea correcta
+import AttendanceReport from '../components/AttendanceReport'; 
 import AttendanceReportCustomRange from '../components/AttendanceReportCustomRange';
 
 const ReportsPage = () => {
