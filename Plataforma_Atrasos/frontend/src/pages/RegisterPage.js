@@ -5,32 +5,45 @@ import { useNavigate } from 'react-router-dom';
 const RegisterPage = () => {
     const [nombreUsuario, setNombreUsuario] = useState('');
     const [rutUsername, setRutUsername] = useState('');
-    const [contraseña, setContraseña] = useState('');
-    const [confirmarContraseña, setConfirmarContraseña] = useState('');
+    const [contrasena, setContrasena] = useState('');
+    const [confirmarContrasena, setConfirmarContrasena] = useState('');
+    const [codRol, setCodRol] = useState('');
     const [error, setError] = useState('');
+    const [mensajeExito, setMensajeExito] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validar que todos los campos estén rellenados
-        if (!nombreUsuario || !rutUsername || !contraseña || !confirmarContraseña) {
+        if (!nombreUsuario || !rutUsername || !contrasena || !confirmarContrasena || !codRol) {
             setError('Por favor, rellena todos los campos');
+            setMensajeExito('');
             return;
         }
 
-        // Validar que las contraseñas coincidan
-        if (contraseña !== confirmarContraseña) {
+        if (contrasena !== confirmarContrasena) {
             setError('Las contraseñas no coinciden');
+            setMensajeExito('');
             return;
         }
 
         try {
-            await register({ nombreUsuario, rutUsername, contraseña });
-            console.log('Registro exitoso');
-            navigate('/home');
+            await register({
+                nombreUsuario,
+                rutUsername,
+                contrasena,
+                codRol: parseInt(codRol)
+            });
+
+            setError('');
+            setMensajeExito('Usuario registrado correctamente');
+
+            setTimeout(() => {
+                navigate('/home');
+            }, 2000);
         } catch (err) {
-            setError(err.message);
+            setMensajeExito('');
+            setError(err.message || 'Error al registrar el usuario');
         }
     };
 
@@ -39,6 +52,7 @@ const RegisterPage = () => {
             <div style={styles.card}>
                 <h2 style={styles.header}>Registro</h2>
                 {error && <p style={styles.error}>{error}</p>}
+                {mensajeExito && <p style={styles.success}>{mensajeExito}</p>}
                 <form onSubmit={handleSubmit}>
                     <div style={styles.formGroup}>
                         <label>Nombre de Usuario</label>
@@ -59,11 +73,20 @@ const RegisterPage = () => {
                         />
                     </div>
                     <div style={styles.formGroup}>
+                        <label>Rol (Código numérico)</label>
+                        <input
+                            type="number"
+                            value={codRol}
+                            onChange={(e) => setCodRol(e.target.value)}
+                            style={styles.input}
+                        />
+                    </div>
+                    <div style={styles.formGroup}>
                         <label>Contraseña</label>
                         <input
                             type="password"
-                            value={contraseña}
-                            onChange={(e) => setContraseña(e.target.value)}
+                            value={contrasena}
+                            onChange={(e) => setContrasena(e.target.value)}
                             style={styles.input}
                         />
                     </div>
@@ -71,8 +94,8 @@ const RegisterPage = () => {
                         <label>Confirmar Contraseña</label>
                         <input
                             type="password"
-                            value={confirmarContraseña}
-                            onChange={(e) => setConfirmarContraseña(e.target.value)}
+                            value={confirmarContrasena}
+                            onChange={(e) => setConfirmarContrasena(e.target.value)}
                             style={styles.input}
                         />
                     </div>
@@ -83,7 +106,7 @@ const RegisterPage = () => {
     );
 };
 
-// Estilos en línea para el diseño
+// Estilos
 const styles = {
     container: {
         display: 'flex',
@@ -95,7 +118,7 @@ const styles = {
     card: {
         width: '400px',
         padding: '40px',
-        borderRadius: '80px',
+        borderRadius: '20px',
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
         backgroundColor: '#fff',
     },
@@ -125,6 +148,11 @@ const styles = {
     },
     error: {
         color: 'red',
+        textAlign: 'center',
+        marginBottom: '15px',
+    },
+    success: {
+        color: 'green',
         textAlign: 'center',
         marginBottom: '15px',
     },

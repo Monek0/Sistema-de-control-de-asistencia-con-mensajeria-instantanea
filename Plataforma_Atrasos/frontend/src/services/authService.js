@@ -1,10 +1,10 @@
-export const login = async (rutUsername, contraseña) => {
+export const login = async (rutUsername, contrasena) => {
     const response = await fetch(process.env.REACT_APP_API_URL + '/auth/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ rutUsername, contraseña })
+        body: JSON.stringify({ rutUsername, contrasena })
     });
 
     const data = await response.json();
@@ -16,7 +16,7 @@ export const login = async (rutUsername, contraseña) => {
     }
 };
 
-export const register = async ({ nombreUsuario, rutUsername, contraseña, codRol }) => {
+export const register = async ({ nombreUsuario, rutUsername, contrasena, codRol }) => {
     try {
         const response = await fetch(process.env.REACT_APP_API_URL + '/auth/register', {
             method: 'POST',
@@ -26,7 +26,7 @@ export const register = async ({ nombreUsuario, rutUsername, contraseña, codRol
             body: JSON.stringify({
                 nombreUsuario,
                 rutUsername,
-                contraseña,
+                contrasena,
                 codRol,
             }),
         });

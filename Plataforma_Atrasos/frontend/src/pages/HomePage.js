@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import axios from 'axios';
 
-// Importa iconos e imágenes
 import controlIcon from '../assets/icons/control.png';
 import reportIcon from '../assets/icons/report.png';
 import messageIcon from '../assets/icons/message.png';
@@ -17,22 +16,20 @@ import logo from '../assets/images/logo.png';
 const HomePage = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
-  // Estado para determinar qué opción del menú está activa:
-  const [activeMenu, setActiveMenu] = useState('home'); // 'home' muestra el mensaje de bienvenida
+  const [activeMenu, setActiveMenu] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
-      // En pantallas mayores a 768, se muestra siempre el sidebar.
       if (window.innerWidth >= 768) {
         setIsSidebarOpen(true);
       }
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize(); // Inicializa el estado
+    handleResize();
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -41,7 +38,7 @@ const HomePage = () => {
     const fetchUserName = async () => {
       try {
         const token = localStorage.getItem('token');
-        const rutUsername = localStorage.getItem('RUT_USERNAME');
+        const rutUsername = localStorage.getItem('rut_username');
         const response = await axios.get(
           `http://localhost:3000/auth/username/${rutUsername}`,
           {
@@ -50,7 +47,7 @@ const HomePage = () => {
             },
           }
         );
-        setUserName(response.data?.NOMBRE_USUARIO || 'No te encontré');
+        setUserName(response.data?.nombre_usuario || 'No te encontré');
       } catch (error) {
         console.error('Error al obtener el nombre de usuario:', error);
         setUserName('No te encontré');
@@ -60,7 +57,6 @@ const HomePage = () => {
   }, []);
 
   const handleMenuClick = (action) => {
-    // Actualiza el menú activo y muestra la opción elegida.
     setActiveMenu(action);
     if (isMobile) {
       setIsSidebarOpen(false);
@@ -183,7 +179,6 @@ const HomePage = () => {
     },
   };
 
-  // Componente MenuItem que añade animación y estilo activo
   const MenuItem = ({ icon, text, action }) => {
     const isActive = activeMenu === action;
     return (
@@ -203,7 +198,6 @@ const HomePage = () => {
 
   return (
     <div style={styles.pageContainer}>
-      {/* Botón hamburguesa (solo móvil) */}
       <button
         style={styles.hamburgerButton}
         className="transition transform hover:scale-105"
@@ -212,10 +206,8 @@ const HomePage = () => {
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Overlay para móvil */}
       <div style={styles.overlay} onClick={() => setIsSidebarOpen(false)} />
 
-      {/* Sidebar */}
       <div style={styles.sidebar}>
         <div style={styles.sidebarContent}>
           <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Menú</h3>
@@ -223,14 +215,11 @@ const HomePage = () => {
           <MenuItem icon={reportIcon} text="Reportes" action="reports" />
           <MenuItem icon={messageIcon} text="Mensajería" action="atrasos" />
           <MenuItem icon={agregarIcon} text="Registrar Usuario" action="registro" />
-
           <img src={logo} alt="Logo" style={styles.logo} />
         </div>
       </div>
 
-      {/* Contenido principal */}
       <div style={styles.mainContent}>
-        {/* Barra superior */}
         <div style={styles.topbar}>
           <div style={styles.topbarContent}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
@@ -246,7 +235,6 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* Área de contenido */}
         <div style={styles.contentArea}>
           {activeMenu === 'home' && (
             <div className="text-center md:text-left">

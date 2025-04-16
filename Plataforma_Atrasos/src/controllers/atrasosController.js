@@ -9,10 +9,9 @@ const path = require('path');
 
 // Inicializar cliente de WhatsApp y configurar eventos
 whatsappController.initializeClient();
-whatsappController.handleQRGeneration();
-whatsappController.handleAuthentication();
-whatsappController.handleDisconnection();
-whatsappController.handleRemoteSessionSaved();
+//whatsappController.handleQRGeneration();
+//whatsappController.handleAuthentication();
+//whatsappController.handleDisconnection();
 
 // Función para enviar un PDF
 const sendPDF = whatsappController.sendPDF;
@@ -23,7 +22,7 @@ const generateBaucher = (data) => {
 
     // Crear un documento PDF ajustado al tamaño de una impresora térmica de 80mm (ancho 80mm, altura automática)
     const doc = new PDFDocument({
-        size: [283, 841], // 80mm de ancho (283 puntos) y altura predeterminada (841 puntos para tamaño A4)
+        size: [283, 150], // 80mm de ancho (283 puntos) y altura predeterminada (841 puntos para tamaño A4)
         margin: 0, // Sin márgenes grandes
     });
 
@@ -34,9 +33,9 @@ const generateBaucher = (data) => {
     doc.fontSize(10); // Puedes probar con 9 o 10, dependiendo de cuánto espacio necesites
 
     // Ajustar la posición del título para moverlo más a la izquierda y hacia arriba
-    doc.text('Comprobante de Atraso', {
+    doc.text('Comprobante de Atraso ', {
         align: 'left', // Alineación a la izquierda
-        continued: true,
+        //continued: true,
         lineBreak: true,
         baseline: 'top',
         indent: 10, // Un pequeño desplazamiento hacia la izquierda
@@ -45,12 +44,12 @@ const generateBaucher = (data) => {
     doc.moveDown(0.5); // Espacio hacia abajo
 
     // Ajustar el texto del curso, alineado a la izquierda
-    doc.text(`Curso: ${curso}`, {
+    doc.text(` Curso: ${curso}`, {
         align: 'left', // Alineación a la izquierda
         indent: 10, // Moverlo un poco hacia la izquierda
     });
 
-    doc.moveDown(1); // Un poco más de espacio hacia abajo para el curso
+    doc.moveDown(0.5); // Un poco más de espacio hacia abajo para el curso
 
     // Mover los siguientes elementos un poco a la derecha para evitar corte, y reducir el espacio entre ellos
     doc.text(`Nombre: ${nombre}`, {
@@ -107,12 +106,16 @@ exports.getAllAtrasos = async (req, res) => {
                CONCAT(b.nombre_alumno, ' ', b.segundo_nombre_alumno, ' ', b.apellido_paterno_alumno, ' ', b.apellido_materno_alumno) AS nombre_completo, 
                c.nombre_curso,
                CASE
-                   WHEN a.justificativo = false THEN 'Sin justificativo'
-                   WHEN b.justificativo_residencia = true THEN 'Residencial'
-                   WHEN b.justificativo_medico = true THEN 'Medico'
-                   WHEN b.justificativo_deportivo = true THEN 'Deportivo'
-                   ELSE 'Sin justificativo'
-               END AS tipo_justificativo
+                    WHEN a.justificativo = false THEN 'Sin justificativo'
+                    ELSE TRIM(
+                        BOTH ', ' FROM
+                        CONCAT_WS(', ',
+                            CASE WHEN b.justificativo_residencia THEN 'Residencial' ELSE NULL END,
+                            CASE WHEN b.justificativo_medico THEN 'Médico' ELSE NULL END,
+                            CASE WHEN b.justificativo_deportivo THEN 'Deportivo' ELSE NULL END
+                        )
+                    )
+                END AS tipo_justificativo
         FROM atrasos a
         JOIN alumnos b ON a.rut_alumno = b.rut_alumno
         JOIN cursos c ON b.cod_curso = c.cod_curso
@@ -148,17 +151,32 @@ exports.createAtraso = async (req, res) => {
         }
 
         const alumno = checkRutResult.rows[0];
-        
+
+        // Determinar tipo de justificativo
+        let tipoJustificativo = 'Sin justificativo';
+        let tieneJustificativo = false;
+
+        if (alumno.justificativo_residencia) {
+            tipoJustificativo = 'Residencial';
+            tieneJustificativo = true;
+        } else if (alumno.justificativo_medico) {
+            tipoJustificativo = 'Médico';
+            tieneJustificativo = true;
+        } else if (alumno.justificativo_deportivo) {
+            tipoJustificativo = 'Deportivo';
+            tieneJustificativo = true;
+        }
+
         // Obtener el curso del alumno
         const cursoResult = await pool.query('SELECT nombre_curso FROM cursos WHERE cod_curso = $1', [alumno.cod_curso]);
         const curso = cursoResult.rows[0]?.nombre_curso || 'Curso desconocido';
 
-        // Insertar el atraso
+        // Insertar el atraso con el tipo de justificativo correcto
         const insertResult = await pool.query(
-            'INSERT INTO atrasos (rut_alumno, fecha_atrasos, justificativo, tipo_justificativo) VALUES ($1, $2, false, $3) RETURNING cod_atrasos',
-            [rutAlumno, fechaAtrasos, 'Sin justificativo']
+            'INSERT INTO atrasos (rut_alumno, fecha_atrasos, justificativo, tipo_justificativo) VALUES ($1, $2, $3, $4) RETURNING cod_atrasos',
+            [rutAlumno, fechaAtrasos, tieneJustificativo, tipoJustificativo]
         );
-        
+
         const codAtraso = insertResult.rows[0].cod_atrasos;
 
         try {
@@ -166,21 +184,19 @@ exports.createAtraso = async (req, res) => {
             const pdfFileName = pdfPath.split('/').pop();
             console.log('Nombre del PDF generado:', pdfFileName);
 
-            // Actualizar la ruta del PDF en la base de datos
             await pool.query('UPDATE atrasos SET pdf_path = $1 WHERE cod_atrasos = $2', [pdfFileName, codAtraso]);
             console.log('Ruta del PDF actualizada correctamente en la base de datos.');
 
-            // Obtener el número de celular del apoderado
             const celularResult = await pool.query('SELECT n_celular_apoderado FROM alumnos WHERE rut_alumno = $1', [rutAlumno]);
             const celularApoderado = celularResult.rows[0]?.n_celular_apoderado;
-            
+
             if (celularApoderado) {
                 await sendPDF(celularApoderado, pdfPath);
             } else {
                 console.error('Error: No se encontró el número de celular del apoderado.');
                 return res.status(404).json({ error: 'No se encontró el número de celular del apoderado' });
             }
-            
+
             const baucherPath = generateBaucher({
                 curso,
                 nombre: `${alumno.nombre_alumno} ${alumno.apellido_paterno_alumno} ${alumno.apellido_materno_alumno}`,

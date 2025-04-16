@@ -28,8 +28,7 @@
     "puppeteer": "^21.3.8",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
-    "whatsapp-web.js": "^1.26.0",
-    "wwebjs-aws-s3": "^1.0.2"
+    "whatsapp-web.js": "^1.26.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9",

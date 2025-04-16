@@ -20,7 +20,7 @@ const LoginPage = () => {
         try {
             // Intento de inicio de sesión
             await login(rutUsername, contraseña);
-            localStorage.setItem('RUT_USERNAME', rutUsername); // Guardar RUT en localStorage
+            localStorage.setItem('rut_username', rutUsername); // Guardar RUT en localStorage
             window.location.href = '/home'; // Redirigir a la página de inicio
         } catch (err) {
             // Manejo de errores de autenticación

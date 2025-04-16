@@ -9,7 +9,7 @@ CREATE TABLE public.usuarios (
     cod_usuario SERIAL PRIMARY KEY,
     nombre_usuario VARCHAR(255),
     cod_rol INT,
-    contraseña VARCHAR(255),
+    contrasena VARCHAR(255),
     rut_username VARCHAR(255),
     FOREIGN KEY (cod_rol) REFERENCES public.rol(cod_rol)
 );
