@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import axios from 'axios';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 import controlIcon from '../assets/icons/control.png';
 import reportIcon from '../assets/icons/report.png';
@@ -13,6 +13,11 @@ import ReportsPage from './ReportsPage';
 import AtrasosPage from './AtrasosPage';
 import RegisterPage from './RegisterPage';
 import logo from '../assets/images/logo.png';
+
+// ✅ URL dinámica
+const API_BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : 'https://18.217.59.7:443';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -42,7 +47,7 @@ const HomePage = () => {
         const token = localStorage.getItem('token');
         const rutUsername = localStorage.getItem('rut_username');
         const response = await axios.get(
-          `http://localhost:3000/auth/username/${rutUsername}`,
+          `${API_BASE_URL}/auth/username/${rutUsername}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -58,18 +63,20 @@ const HomePage = () => {
     fetchUserName();
   }, []);
 
-  // Extraer el rol del token (si existe) al cargar la HomePage
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        setUserRole(decoded.role);
+        setUserRole(decoded.role || decoded.cod_rol); // Asegura compatibilidad
       } catch (err) {
         console.error('Error decodificando el token:', err);
       }
     }
   }, []);
+
+  // ... (resto del código permanece igual)
+
 
   const handleMenuClick = (action) => {
     setActiveMenu(action);

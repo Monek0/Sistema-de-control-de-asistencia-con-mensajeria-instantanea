@@ -3,6 +3,12 @@ import axios from 'axios';
 import { PDFDocument, rgb } from 'pdf-lib';
 
 const AtrasosPage = () => {
+
+    const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://18.217.59.7:443';
+
+
     const [atrasos, setAtrasos] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -15,7 +21,7 @@ const AtrasosPage = () => {
     useEffect(() => {
         const fetchAtrasos = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/api/atrasos');
+                const response = await axios.get(`${API_BASE_URL}/api/atrasos`);
                 setAtrasos(response.data);
                 setLoading(false);
             } catch (error) {
@@ -26,7 +32,7 @@ const AtrasosPage = () => {
         };
 
         fetchAtrasos();
-    }, []);
+    }, [API_BASE_URL]);
 
     const filteredAtrasos = atrasos.filter((atraso) => {
         const rut = atraso.rut_alumno || '';
@@ -169,7 +175,7 @@ const AtrasosPage = () => {
                                         <td style={styles.cell}>
                                             {atraso.pdf_path ? (
                                                 <a
-                                                    href={`http://localhost:3000/SalidaPDF/${atraso.pdf_path}`}
+                                                    href={`${API_BASE_URL}/SalidaPDF/${atraso.pdf_path}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     style={styles.pdfLink}

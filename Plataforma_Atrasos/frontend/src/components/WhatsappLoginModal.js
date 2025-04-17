@@ -5,6 +5,13 @@ import { io } from 'socket.io-client';
 // Configura el elemento raíz del modal (ajusta según tu app)
 Modal.setAppElement('#root');
 
+const getSocketURL = () => {
+  return window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://18.217.59.7:443';
+};
+
+
 const WhatsappLoginModal = ({ isOpen, onRequestClose }) => {
   // Estado para el QR, mensaje de estado y bandera de conexión
   const [qrImage, setQrImage] = useState(null);
@@ -15,7 +22,7 @@ const WhatsappLoginModal = ({ isOpen, onRequestClose }) => {
   useEffect(() => {
     if (isOpen) {
       // Conecta al backend; verifica que la URL sea la correcta (puedes cambiar el puerto o dominio)
-      const socketClient = io('http://localhost:3000');
+      const socketClient = io(getSocketURL());
 
       setSocket(socketClient);
 

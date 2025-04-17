@@ -3,6 +3,12 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
+const getBackendURL = () => {
+    return window.location.hostname === 'localhost'
+      ? 'http://localhost:3000'
+      : 'https://18.217.59.7:443';
+  };  
+
 const AttendanceReport = () => {
     const [reportes, setReportes] = useState([]);
     const [selectedDate, setSelectedDate] = useState(null);
@@ -19,7 +25,7 @@ const AttendanceReport = () => {
             setLoading(true);
             setError(null);
             const formattedDate = selectedDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-            const response = await axios.get(`http://localhost:3000/api/atrasos/dia?fecha=${formattedDate}`);
+            const response = await axios.get(`${getBackendURL()}/api/atrasos/dia?fecha=${formattedDate}`);
             setReportes(response.data); 
         } catch (error) {
             setError('Error al obtener los reportes. Inténtalo de nuevo.');

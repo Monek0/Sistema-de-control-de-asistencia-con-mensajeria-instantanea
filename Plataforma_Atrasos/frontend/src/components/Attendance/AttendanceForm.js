@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
+const API_BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : 'https://18.217.59.7:443';
+
+
 const AttendanceForm = ({ onSuccess, currentData }) => {
     const [rutAlumno, setRutAlumno] = useState(currentData?.rutAlumno || '');
     const [nombreAlumno, setNombreAlumno] = useState(''); // Estado para almacenar el nombre del alumno
@@ -40,7 +45,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
     const validarRutExistente = async (rut) => {
         try {
-            const response = await axios.get(`http://localhost:3000/api/alumnos/verificar/${rut}`);
+            const response = await axios.get(`${API_BASE_URL}/api/alumnos/verificar/${rut}`);
             return response.data.exists;
         } catch (error) {
             console.error('Error al validar RUT:', error);
@@ -50,7 +55,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
     const obtenerDatosAlumno = async (rut) => {
         try {
-            const response = await axios.get(`http://localhost:3000/api/alumnos/${rut}`);
+            const response = await axios.get(`${API_BASE_URL}/api/alumnos/${rut}`);
             if (response.status === 200) {
                 const { nombre, justificativo } = response.data;
                 setNombreAlumno(nombre);
@@ -81,8 +86,8 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
             // Enviar datos al backend para registrar el atraso
             const url = currentData
-                ? `http://localhost:3000/api/atrasos/${currentData.id}`
-                : 'http://localhost:3000/api/atrasos';
+                ? `${API_BASE_URL}/api/atrasos/${currentData.id}`
+                : `${API_BASE_URL}/api/atrasos`;
             const method = currentData ? axios.put : axios.post;
             const response = await method(url, { rutAlumno, fechaAtrasos });
 
@@ -95,7 +100,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
                 resetForm();
 
                 // Abre el PDF en una nueva ventana para ver/descargar/print
-                window.open(`http://localhost:3000${baucherPath}`, '_blank');
+                window.open(`${API_BASE_URL}${baucherPath}`, '_blank');
             } else {
                 setError('Error al registrar el atraso.');
             }
@@ -107,7 +112,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
     const handleDownloadBaucher = () => {
         if (baucherPath) {
-            window.open(`http://localhost:3000/${baucherPath}`, '_blank'); // Abrir el PDF en una nueva ventana
+            window.open(`${API_BASE_URL}/${baucherPath}`, '_blank'); // Abrir el PDF en una nueva ventana
         }
     };
 

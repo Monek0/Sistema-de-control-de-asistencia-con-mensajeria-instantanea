@@ -10,6 +10,11 @@ import AttendanceReportCustomRange from '../components/AttendanceReportCustomRan
 
 Modal.setAppElement('#root');
 
+// ✅ URL dinámica
+const API_BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : 'https://18.217.59.7:443';
+
 const COLORS = ['#4caf50', '#f44336'];
 
 const ReportsPage = () => {
@@ -26,11 +31,11 @@ const ReportsPage = () => {
     const headers = { Authorization: `Bearer ${token}` };
 
     Promise.all([
-      axios.get('http://localhost:3000/api/metrics/daily', { headers }),
-      axios.get('http://localhost:3000/api/metrics/weekly', { headers }),
-      axios.get('http://localhost:3000/api/metrics/monthly-trend', { headers }),
-      axios.get('http://localhost:3000/api/metrics/top-users', { headers }),
-      axios.get('http://localhost:3000/api/metrics/justified-vs-not', { headers })
+      axios.get(`${API_BASE_URL}/api/metrics/daily`, { headers }),
+      axios.get(`${API_BASE_URL}/api/metrics/weekly`, { headers }),
+      axios.get(`${API_BASE_URL}/api/metrics/monthly-trend`, { headers }),
+      axios.get(`${API_BASE_URL}/api/metrics/top-users`, { headers }),
+      axios.get(`${API_BASE_URL}/api/metrics/justified-vs-not`, { headers })
     ]).then(([d, w, m, t, j]) => {
       setKpis({
         daily: d.data.count,
@@ -45,6 +50,7 @@ const ReportsPage = () => {
       ]);
     }).catch(console.error);
   }, []);
+
 
   const styles = {
     kpiContainer: { display: 'flex', gap: 20, marginBottom: 40 },
