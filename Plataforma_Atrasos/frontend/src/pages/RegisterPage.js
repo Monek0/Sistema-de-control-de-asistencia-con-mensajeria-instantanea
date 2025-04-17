@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { register } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+import WhatsappLoginModal from '../components/WhatsappLoginModal';
 
 const RegisterPage = () => {
     const [nombreUsuario, setNombreUsuario] = useState('');
@@ -10,6 +11,7 @@ const RegisterPage = () => {
     const [codRol, setCodRol] = useState('');
     const [error, setError] = useState('');
     const [mensajeExito, setMensajeExito] = useState('');
+    const [showWhatsappModal, setShowWhatsappModal] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -48,11 +50,33 @@ const RegisterPage = () => {
     };
 
     return (
+        <>
+            {}
+            <div style={styles.whatsappContainer}>
+                <button
+                    onClick={() => setShowWhatsappModal(true)}
+                    style={styles.whatsappButton}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#013f73'}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#01579b'}
+                >
+                    Iniciar sesión con WhatsApp
+                </button>
+            </div>
+
+            <WhatsappLoginModal
+                isOpen={showWhatsappModal}
+                onRequestClose={() => setShowWhatsappModal(false)}
+            />
+            
+                
         <div style={styles.container}>
             <div style={styles.card}>
                 <h2 style={styles.header}>Registro</h2>
+
                 {error && <p style={styles.error}>{error}</p>}
                 {mensajeExito && <p style={styles.success}>{mensajeExito}</p>}
+
+
                 <form onSubmit={handleSubmit}>
                     <div style={styles.formGroup}>
                         <label>Nombre de Usuario</label>
@@ -103,6 +127,7 @@ const RegisterPage = () => {
                 </form>
             </div>
         </div>
+        </>
     );
 };
 
@@ -112,7 +137,7 @@ const styles = {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        height: '60vh',
+        height: '70vh',
         backgroundColor: '#f7f7f7',
     },
     card: {
@@ -156,6 +181,18 @@ const styles = {
         textAlign: 'center',
         marginBottom: '15px',
     },
+    whatsappButton: {
+        padding: '10px 15px',
+        backgroundColor: '#01579b',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        transition: 'background-color 0.3s ease, transform 0.3s',
+        marginBottom: '20px',
+    },
+    
+    
 };
 
 export default RegisterPage;
