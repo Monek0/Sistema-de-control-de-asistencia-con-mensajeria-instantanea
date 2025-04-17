@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-} from 'recharts';
+
 
 const AttendanceReportCustomRange = () => {
     const [startDate, setStartDate] = useState('');
@@ -17,8 +8,7 @@ const AttendanceReportCustomRange = () => {
     const [reportData, setReportData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [showChart, setShowChart] = useState(false);
-    const [chartData, setChartData] = useState([]);
+    
 
     const handleGenerateReport = async () => {
         if (!startDate || !endDate) {
@@ -34,8 +24,7 @@ const AttendanceReportCustomRange = () => {
         setLoading(true);
         setError('');
         setReportData(null);
-        setShowChart(false);
-        setChartData([]);
+       
 
         try {
             const response = await axios.get('http://localhost:3000/api/atrasos/rango', {
@@ -58,35 +47,8 @@ const AttendanceReportCustomRange = () => {
         }
     };
 
-    const processChartData = () => {
-        if (!reportData || !reportData.atrasos) {
-            return [];
-        }
-
-        const counts = {};
-
-        reportData.atrasos.forEach((atraso) => {
-            const date = new Date(atraso.FECHA_ATRASOS).toLocaleDateString();
-            counts[date] = (counts[date] || 0) + 1;
-        });
-
-        const data = Object.keys(counts).map((date) => ({
-            fecha: date,
-            cantidad: counts[date],
-        }));
-
-        data.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-
-        return data;
-    };
-
-    const toggleChart = () => {
-        if (!showChart) {
-            const data = processChartData();
-            setChartData(data);
-        }
-        setShowChart((prev) => !prev);
-    };
+    
+    
 
     return (
         <div style={styles.container}>
@@ -153,37 +115,7 @@ const AttendanceReportCustomRange = () => {
                                 </table>
                             </div>
 
-                            <button
-                                onClick={toggleChart}
-                                style={styles.chartButton}
-                                disabled={reportData.atrasos.length === 0}
-                            >
-                                {showChart ? 'Ocultar Gráfica de Atrasos' : 'Mostrar Gráfica de Atrasos'}
-                            </button>
-
-                            {showChart && chartData.length > 0 && (
-                                <div style={styles.chartContainer}>
-                                    <h3>Cantidad de Atrasos por Fecha</h3>
-                                    <ResponsiveContainer width="50%" height={300}>
-                                        <BarChart
-                                            data={chartData}
-                                            margin={{
-                                                top: 20,
-                                                right: 30,
-                                                left: 20,
-                                                bottom: 5,
-                                            }}
-                                        >
-                                            <CartesianGrid strokeDasharray="3 3" />
-                                            <XAxis dataKey="fecha" />
-                                            <YAxis allowDecimals={false} />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Bar dataKey="cantidad" fill="#8884d8" name="Cantidad de Atrasos" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            )}
+                            
                         </>
                     ) : (
                         <p>No se encontraron atrasos en este rango de fechas.</p>

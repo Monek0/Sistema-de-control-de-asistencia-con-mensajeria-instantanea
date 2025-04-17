@@ -11,6 +11,7 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/authRoutes');
 const atrasosRoutes = require('./routes/atrasosRoutes');
 const justificativoRoutes = require('./routes/justificativoRoutes');
+const metricsRoutes = require('./routes/metricsRoutes')
 
 dotenv.config();
 
@@ -49,6 +50,8 @@ app.use('/pdfs', express.static(path.join(__dirname, 'pdfs')));
 app.use('/auth', authRoutes);
 app.use('/api', atrasosRoutes);
 app.use('/api', justificativoRoutes);
+app.use('/api/metrics', metricsRoutes);
+
 
 // Aquí se crea el servidor HTTP y se integra con Socket.IO
 const server = http.createServer(app);
