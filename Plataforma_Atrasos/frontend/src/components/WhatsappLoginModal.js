@@ -8,7 +8,7 @@ Modal.setAppElement('#root');
 const getSocketURL = () => {
   return window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
-    : 'https://18.217.59.7:443';
+    : 'https://18.116.51.59:443';
 };
 
 

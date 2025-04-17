@@ -17,7 +17,7 @@ import logo from '../assets/images/logo.png';
 // ✅ URL dinámica
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
-  : 'https://18.217.59.7:443';
+  : 'https://18.116.51.59:443';
 
 const HomePage = () => {
   const navigate = useNavigate();
