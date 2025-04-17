@@ -1,3 +1,4 @@
+const { format, utcToZonedTime } = require('date-fns-tz');
 const PDFDocumentLib = require('pdf-lib');
 const PDFDocument = PDFDocumentLib.PDFDocument;
 const pool = require('../config/db');
@@ -24,14 +25,25 @@ exports.fillForm = async (rutAlumno, fechaAtraso) => {
     const colegioField = form.getTextField('colegio');
     const fechaField = form.getTextField('fecha');
     const cuerpoField = form.getTextField('cuerpo');
-
     const logoImageField = form.getButton('logo');
+
+    // 🌍 Fecha en zona horaria de Santiago de Chile
+    const zonaChile = 'America/Santiago';
+    const fechaChile = utcToZonedTime(fechaAtraso, zonaChile);
+    const fechaFormateada = format(fechaChile, 'dd/MM/yyyy HH:mm', { timeZone: zonaChile });
+ 
 
     colegioField.setText('INSUCO');
     fechaField.setText(fechaAtraso.toLocaleString());
 
-    cuerpoField.setText("Estimado Apoderado(a), \n\nLe informarmos que su pupilo(a) " + [datosAlumno.nombre_alumno, datosAlumno.segundo_nombre_alumno, datosAlumno.apellido_paterno_alumno, datosAlumno.apellido_materno_alumno].reduce((acc, cv) =>
-      acc + cv + " ", "") + "RUT " + datosAlumno.rut_alumno + " ha registrado un atraso con fecha " + fechaAtraso.toLocaleString() + ".");
+    const nombreCompleto = [
+      datosAlumno.nombre_alumno,
+      datosAlumno.segundo_nombre_alumno,
+      datosAlumno.apellido_paterno_alumno,
+      datosAlumno.apellido_materno_alumno
+    ].join(' ');
+
+    cuerpoField.setText(`Estimado Apoderado(a),\n\nLe informamos que su pupilo(a) ${nombreCompleto}, RUT ${datosAlumno.rut_alumno}, ha registrado un atraso con fecha ${fechaFormateada}.`);
 
     logoImageField.setImage(logoImage);
 
@@ -39,14 +51,13 @@ exports.fillForm = async (rutAlumno, fechaAtraso) => {
     const pdfBytes = await pdfDoc.save();
 
     function generatePDFFileName() {
-      const date = new Date();
-      const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}_${date.getHours().toString().padStart(2, '0')}-${date.getMinutes().toString().padStart(2, '0')}-${date.getSeconds().toString().padStart(2, '0')}`;
-      return `../Plataforma_Atrasos/src/SalidaPDF/${formattedDate}.pdf`;
+      const now = utcToZonedTime(new Date(), zonaChile);
+      const fechaArchivo = format(now, 'yyyy-MM-dd_HH-mm-ss', { timeZone: zonaChile });
+      return `../Plataforma_Atrasos/src/SalidaPDF/${fechaArchivo}.pdf`;
     }
     
     const pdfFileName = generatePDFFileName();
     
-    // Rewrite the file writing part using a promise
     return new Promise((resolve, reject) => {
       fs.writeFile(pdfFileName, pdfBytes, (err) => {
         if (err) {
