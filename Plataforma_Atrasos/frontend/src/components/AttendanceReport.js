@@ -6,7 +6,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 const getBackendURL = () => {
     return window.location.hostname === 'localhost'
       ? 'http://localhost:3000'
-      : 'https://18.116.51.59:443';
+      : 'https://api.edupuntual.cl';
   };  
 
 const AttendanceReport = () => {
