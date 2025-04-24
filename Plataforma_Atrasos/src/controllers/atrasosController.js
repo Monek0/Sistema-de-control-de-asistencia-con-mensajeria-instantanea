@@ -110,9 +110,9 @@ exports.getAllAtrasos = async (req, res) => {
                     ELSE TRIM(
                         BOTH ', ' FROM
                         CONCAT_WS(', ',
-                            CASE WHEN b.justificativo_residencia THEN 'Residencial' ELSE NULL END,
-                            CASE WHEN b.justificativo_medico THEN 'Médico' ELSE NULL END,
-                            CASE WHEN b.justificativo_deportivo THEN 'Deportivo' ELSE NULL END
+                            CASE WHEN b.justificativo_residencia THEN 'R' ELSE NULL END,
+                            CASE WHEN b.justificativo_medico THEN 'M' ELSE NULL END,
+                            CASE WHEN b.justificativo_deportivo THEN 'D' ELSE NULL END
                         )
                     )
                 END AS tipo_justificativo
