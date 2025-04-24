@@ -1,3 +1,4 @@
+// AtrasosPage con estilos, filtros y ordenamiento restaurados
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { PDFDocument, rgb } from 'pdf-lib';
@@ -5,9 +6,8 @@ import { PDFDocument, rgb } from 'pdf-lib';
 const AtrasosPage = () => {
 
     const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:3000'
-    : 'https://api.edupuntual.cl';
-
+        ? 'http://localhost:3000'
+        : 'https://api.edupuntual.cl';
 
     const [atrasos, setAtrasos] = useState([]);
     const [error, setError] = useState(null);
@@ -17,6 +17,9 @@ const AtrasosPage = () => {
     const [searchName, setSearchName] = useState('');
     const [searchCurso, setSearchCurso] = useState('');
     const [searchMonth, setSearchMonth] = useState('');
+
+    const [sortColumn, setSortColumn] = useState('');
+    const [sortDirection, setSortDirection] = useState('asc');
 
     useEffect(() => {
         const fetchAtrasos = async () => {
@@ -34,20 +37,14 @@ const AtrasosPage = () => {
         fetchAtrasos();
     }, [API_BASE_URL]);
 
-    const filteredAtrasos = atrasos.filter((atraso) => {
-        const rut = atraso.rut_alumno || '';
-        const nombre = atraso.nombre_completo || '';
-        const curso = atraso.nombre_curso || '';
-
-        const matchesRut = rut.toLowerCase().includes(searchRut.toLowerCase());
-        const matchesName = nombre.toLowerCase().includes(searchName.toLowerCase());
-        const matchesCurso = curso.toLowerCase().includes(searchCurso.toLowerCase());
-
-        const fechaAtraso = new Date(atraso.fecha_atrasos);
-        const matchesMonth = searchMonth ? fechaAtraso.getMonth() === parseInt(searchMonth) : true;
-
-        return matchesRut && matchesName && matchesCurso && matchesMonth;
-    });
+    const handleSort = (column) => {
+        if (sortColumn === column) {
+            setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
 
     const generatePDF = async () => {
         const pdfDoc = await PDFDocument.create();
@@ -90,9 +87,7 @@ const AtrasosPage = () => {
             const fechaFormateada = fecha.toLocaleDateString();
             const horaFormateada = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            const justificado = atraso.justificativo
-                ? `Sí (${atraso.tipo_justificativo})`
-                : 'No';
+            const justificado = atraso.justificativo ? `Sí (${atraso.tipo_justificativo})` : 'No';
 
             page.drawText(atraso.rut_alumno || '', { x: 30, y: yPosition, size: fontSize });
             page.drawText(fechaFormateada, { x: 100, y: yPosition, size: fontSize });
@@ -118,8 +113,109 @@ const AtrasosPage = () => {
         link.click();
     };
 
-    if (loading) return <div style={styles.loading}>Cargando lista de atrasos...</div>;
-    if (error) return <div style={styles.error}>{error}</div>;
+    const filteredAtrasos = atrasos
+        .filter((atraso) => {
+            const rut = atraso.rut_alumno || '';
+            const nombre = atraso.nombre_completo || '';
+            const curso = atraso.nombre_curso || '';
+
+            const matchesRut = rut.toLowerCase().includes(searchRut.toLowerCase());
+            const matchesName = nombre.toLowerCase().includes(searchName.toLowerCase());
+            const matchesCurso = curso.toLowerCase().includes(searchCurso.toLowerCase());
+
+            const fechaAtraso = new Date(atraso.fecha_atrasos);
+            const matchesMonth = searchMonth ? fechaAtraso.getMonth() === parseInt(searchMonth) : true;
+
+            return matchesRut && matchesName && matchesCurso && matchesMonth;
+        })
+        .sort((a, b) => {
+            if (!sortColumn) return 0;
+
+            let valA = a[sortColumn];
+            let valB = b[sortColumn];
+
+            if (sortColumn === 'fecha_atrasos') {
+                valA = new Date(valA);
+                valB = new Date(valB);
+            } else {
+                valA = (valA || '').toString().toLowerCase();
+                valB = (valB || '').toString().toLowerCase();
+            }
+
+            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+    const styles = {
+        container: {
+            maxWidth: '1200px',
+            margin: '2rem auto',
+            padding: '1.5rem',
+            backgroundColor: '#fff',
+            borderRadius: '0.5rem',
+            boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        },
+        title: {
+            textAlign: 'center',
+            color: 'black',
+            marginBottom: '1rem',
+        },
+        filters: {
+            display: 'flex',
+            gap: '0.5rem',
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap',
+        },
+        filterInput: {
+            padding: '0.5rem',
+            fontSize: '1rem',
+            borderRadius: '0.375rem',
+            border: '1px solid #ccc',
+        },
+        pdfButton: {
+            padding: '0.5rem 1rem',
+            backgroundColor: '#01579b',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+        },
+        table: {
+            width: '100%',
+            borderCollapse: 'collapse',
+        },
+        headerCell: {
+            backgroundColor: '#01579b',
+            color: '#fff',
+            padding: '0.75rem',
+            borderBottom: '2px solid #01579b',
+            cursor: 'pointer',
+        },
+        cell: {
+            padding: '0.75rem',
+            borderBottom: '1px solid #ddd',
+            textAlign: 'center'
+        },
+        error: {
+            color: 'red',
+            textAlign: 'center',
+            marginTop: '1rem',
+        },
+        loading: {
+            textAlign: 'center',
+            marginTop: '2rem',
+        },
+        pdfLink: {
+            color: '#01579b',
+            textDecoration: 'none',
+        },
+        noData: {
+            textAlign: 'center',
+            marginTop: '1rem',
+            color: '#888',
+        },
+    };
 
     return (
         <div style={styles.container}>
@@ -131,26 +227,28 @@ const AtrasosPage = () => {
                 <input type="text" placeholder="Buscar por Curso" value={searchCurso} onChange={(e) => setSearchCurso(e.target.value)} style={styles.filterInput} />
                 <select value={searchMonth} onChange={(e) => setSearchMonth(e.target.value)} style={styles.filterInput}>
                     <option value="">Seleccionar Mes</option>
-                    {['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((mes, idx) => (
+                    {["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"].map((mes, idx) => (
                         <option key={idx} value={idx}>{mes}</option>
                     ))}
                 </select>
                 <button onClick={generatePDF} style={styles.pdfButton}>Imprimir Reporte PDF</button>
             </div>
 
-            {filteredAtrasos.length === 0 ? (
-                <p style={styles.noData}>No hay atrasos registrados.</p>
-            ) : (
-                <div style={styles.tableContainer}>
+            {loading && <div style={styles.loading}>Cargando lista de atrasos...</div>}
+            {error && <div style={styles.error}>{error}</div>}
+            {!loading && !error && (
+                filteredAtrasos.length === 0 ? (
+                    <p style={styles.noData}>No hay atrasos registrados.</p>
+                ) : (
                     <table style={styles.table}>
                         <thead>
                             <tr>
-                                <th style={styles.headerCell}>RUT</th>
-                                <th style={styles.headerCell}>Fecha</th>
-                                <th style={styles.headerCell}>Hora</th>
+                                <th style={styles.headerCell} onClick={() => handleSort('rut_alumno')}>RUT</th>
+                                <th style={styles.headerCell} onClick={() => handleSort('fecha_atrasos')}>Fecha</th>
+                                <th style={styles.headerCell} onClick={() => handleSort('fecha_atrasos')}>Hora</th>
                                 <th style={styles.headerCell}>Justificativo</th>
-                                <th style={styles.headerCell}>Nombre</th>
-                                <th style={styles.headerCell}>Curso</th>
+                                <th style={styles.headerCell} onClick={() => handleSort('nombre_completo')}>Nombre</th>
+                                <th style={styles.headerCell} onClick={() => handleSort('nombre_curso')}>Curso</th>
                                 <th style={styles.headerCell}>PDF</th>
                             </tr>
                         </thead>
@@ -160,12 +258,10 @@ const AtrasosPage = () => {
                                 const fechaFormateada = fecha.toLocaleDateString();
                                 const horaFormateada = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-                                const justificado = atraso.justificativo
-                                    ? `Sí (${atraso.tipo_justificativo})`
-                                    : 'No';
+                                const justificado = atraso.justificativo ? `Sí (${atraso.tipo_justificativo})` : 'No';
 
                                 return (
-                                    <tr key={atraso.cod_atrasos} style={styles.row}>
+                                    <tr key={atraso.cod_atrasos}>
                                         <td style={styles.cell}>{atraso.rut_alumno}</td>
                                         <td style={styles.cell}>{fechaFormateada}</td>
                                         <td style={styles.cell}>{horaFormateada}</td>
@@ -174,13 +270,7 @@ const AtrasosPage = () => {
                                         <td style={styles.cell}>{atraso.nombre_curso}</td>
                                         <td style={styles.cell}>
                                             {atraso.pdf_path ? (
-                                                <a
-                                                    href={`${API_BASE_URL}/SalidaPDF/${atraso.pdf_path}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    style={styles.pdfLink}
-                                                    download
-                                                >
+                                                <a href={`${API_BASE_URL}/SalidaPDF/${atraso.pdf_path}`} target="_blank" rel="noopener noreferrer" style={styles.pdfLink} download>
                                                     📥 Descargar PDF
                                                 </a>
                                             ) : 'No disponible'}
@@ -190,84 +280,10 @@ const AtrasosPage = () => {
                             })}
                         </tbody>
                     </table>
-                </div>
+                )
             )}
         </div>
     );
-};
-
-const styles = {
-    container: {
-        maxWidth: '1200px',
-        margin: '2rem auto',
-        padding: '1.5rem',
-        backgroundColor: '#fff',
-        borderRadius: '0.5rem',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-    },
-    title: {
-        textAlign: 'center',
-        color: 'black',
-        marginBottom: '1rem',
-    },
-    filters: {
-        display: 'flex',
-        gap: '0.5rem',
-        marginBottom: '1.5rem',
-        flexWrap: 'wrap',
-    },
-    filterInput: {
-        padding: '0.5rem',
-        fontSize: '1rem',
-        borderRadius: '0.375rem',
-        border: '1px solid #ccc',
-    },
-    pdfButton: {
-        padding: '0.5rem 1rem',
-        backgroundColor: '#01579b',
-        color: '#fff',
-        border: 'none',
-        borderRadius: '0.375rem',
-        cursor: 'pointer',
-    },
-    tableContainer: {
-        overflowX: 'auto',
-    },
-    table: {
-        width: '100%',
-        borderCollapse: 'collapse',
-    },
-    headerCell: {
-        backgroundColor: '#01579b',
-        color: '#fff',
-        padding: '0.75rem',
-        borderBottom: '2px solid #01579b',
-    },
-    row: {
-        backgroundColor: '#f7f9f9',
-    },
-    cell: {
-        padding: '0.75rem',
-        borderBottom: '1px solid #ddd',
-    },
-    noData: {
-        textAlign: 'center',
-        marginTop: '1rem',
-        color: '#888',
-    },
-    error: {
-        color: 'red',
-        textAlign: 'center',
-        marginTop: '1rem',
-    },
-    loading: {
-        textAlign: 'center',
-        marginTop: '2rem',
-    },
-    pdfLink: {
-        color: '#01579b',
-        textDecoration: 'none',
-    },
 };
 
 export default AtrasosPage;

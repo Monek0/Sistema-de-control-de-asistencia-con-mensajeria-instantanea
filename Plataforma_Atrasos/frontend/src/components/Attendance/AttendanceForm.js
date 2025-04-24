@@ -53,20 +53,20 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
         }
     };
 
-    const obtenerDatosAlumno = async (rut) => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/alumnos/${rut}`);
-            if (response.status === 200) {
-                const { nombre, justificativo } = response.data;
-                setNombreAlumno(nombre);
-                setMostrarJustificativo(justificativo); // Determinar si hay justificativos
-            }
-        } catch (error) {
-            console.error('Error al obtener los datos del alumno:', error);
-            setNombreAlumno('');
-            setMostrarJustificativo(false);
-        }
-    };
+    // const obtenerDatosAlumno = async (rut) => {
+    //     try {
+    //         const response = await axios.get(`${API_BASE_URL}/api/alumnos/${rut}`);
+    //         if (response.status === 200) {
+    //             const { nombre, justificativo } = response.data;
+    //             setNombreAlumno(nombre);
+    //             setMostrarJustificativo(justificativo); // Determinar si hay justificativos
+    //         }
+    //     } catch (error) {
+    //         console.error('Error al obtener los datos del alumno:', error);
+    //         setNombreAlumno('');
+    //         setMostrarJustificativo(false);
+    //     }
+    // };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -82,7 +82,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
             }
 
             // Obtener datos adicionales del alumno antes de enviar
-            await obtenerDatosAlumno(rutAlumno);
+            //await obtenerDatosAlumno(rutAlumno);
 
             // Enviar datos al backend para registrar el atraso
             const url = currentData

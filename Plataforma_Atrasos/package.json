@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon src/index.js",
+    "start:prod": "node src/index.js",
     "deploy:backend": "serverless deploy",
     "deploy:backend:prod": "serverless deploy --stage production",
     "offline": "serverless offline"
