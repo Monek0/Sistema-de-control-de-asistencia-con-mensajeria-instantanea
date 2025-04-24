@@ -26,6 +26,9 @@ const WhatsappLoginModal = ({ isOpen, onRequestClose }) => {
 
       setSocket(socketClient);
 
+      socketClient.emit('get_status');
+
+
       socketClient.on('connect', () => {
         console.log('Conectado al servidor de Socket.IO');
       });

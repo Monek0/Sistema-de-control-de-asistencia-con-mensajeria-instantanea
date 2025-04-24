@@ -1,21 +1,59 @@
 const { Client, MessageMedia, LocalAuth } = require('whatsapp-web.js');
 const fs = require('fs');
-const puppeteer = require('puppeteer');
 const path = require('path');
 
 let client;
-let ioSocket = null; // WebSocket (socket.io) para emitir QR
+let ioSocket = null;
 
-// Conectar socket.io
+// Asignar el socket.io desde el servidor
 const setSocket = (io) => {
   ioSocket = io;
+
+  // Escuchar eventos desde el frontend
+  io.on('connection', (socket) => {
+    console.log('🟢 Cliente conectado al WebSocket');
+
+    socket.on('logout', async () => {
+      console.log('🔴 Logout solicitado desde el frontend');
+      if (client) {
+        try {
+          await client.logout();
+          await client.destroy();
+
+          // Borrar datos de sesión (auth y cache)
+          const sessionPath = path.join('/tmp', '.wwebjs_auth', 'plataforma-atrasos-whatsapp');
+          const cachePath = path.join(__dirname, 'Plataforma_Atrasos', '.wwebjs_cache');
+
+          fs.rmSync(sessionPath, { recursive: true, force: true });
+          fs.rmSync(cachePath, { recursive: true, force: true });
+
+          console.log('✅ Sesión cerrada y datos eliminados');
+
+          socket.emit('disconnected', 'Sesión cerrada manualmente');
+
+          // Reiniciar cliente para generar nuevo QR
+          initializeClient();
+        } catch (err) {
+          console.error('❌ Error al cerrar sesión:', err);
+        }
+      }
+    });
+    socket.on('get_status', () => {
+      if (client && client.info && client.info.wid) {
+        console.log('🔍 Estado solicitado → Cliente autenticado');
+        socket.emit('authenticated');
+      } else {
+        console.log('🔍 Estado solicitado → Cliente no autenticado');
+      }
+    });
+    
+  });
 };
 
 // Inicializar cliente WhatsApp
 const initializeClient = async () => {
   console.log('Inicializando cliente de WhatsApp con LocalAuth...');
 
-  // Cliente WhatsApp con autenticación local
   client = new Client({
     puppeteer: {
       headless: true,
@@ -23,7 +61,7 @@ const initializeClient = async () => {
     },
     authStrategy: new LocalAuth({
       clientId: 'plataforma-atrasos-whatsapp',
-      dataPath: path.join('/tmp', '.wwebjs_auth') // Ruta para almacenar los datos de sesión
+      dataPath: path.join('/tmp', '.wwebjs_auth')
     })
   });
 
@@ -34,12 +72,9 @@ const initializeClient = async () => {
   client.initialize();
 };
 
-// QR generado → enviar por WebSocket (base64)
+// Emitir QR al frontend
 const handleQRGeneration = () => {
-  if (!client) return;
-
   client.on('qr', async (qr) => {
-    console.log('QR generado. Emitiendo al frontend...');
     if (ioSocket) {
       const QRCode = require('qrcode');
       try {
@@ -52,58 +87,57 @@ const handleQRGeneration = () => {
   });
 };
 
-// Autenticación
+// Emitir eventos de autenticación
 const handleAuthentication = () => {
-  if (!client) return;
-
   client.on('authenticated', () => {
-    console.log('Cliente autenticado');
+    console.log('✅ Cliente autenticado');
     if (ioSocket) ioSocket.emit('authenticated');
   });
 
   client.on('auth_failure', () => {
-    console.log('Fallo de autenticación. Reiniciando...');
+    console.log('❌ Fallo de autenticación');
     if (ioSocket) ioSocket.emit('auth_failure');
-    client.initialize();
+  });
+
+  client.on('ready', () => {
+    console.log('📱 WhatsApp listo para usar');
+    if (ioSocket) ioSocket.emit('ready');
   });
 };
 
-// Desconexión
+// Reintentar en caso de desconexión
 const handleDisconnection = () => {
-  if (!client) return;
-
   client.on('disconnected', (reason) => {
-    console.log('Desconectado:', reason);
+    console.log('⚠️ Desconectado:', reason);
     if (ioSocket) ioSocket.emit('disconnected', reason);
-    client.destroy();
-    client.initialize();
+
+    client.destroy().then(() => {
+      console.log('🔄 Reiniciando cliente...');
+      initializeClient();
+    });
   });
 };
 
-// Enviar PDF por WhatsApp
+// Enviar PDF
 const sendPDF = async (number, filePath) => {
   try {
     const formattedNumber = number.includes('@c.us') ? number : `${number}@c.us`;
-    console.log(`Enviando PDF a ${formattedNumber}: ${filePath}`);
+    console.log(`📤 Enviando PDF a ${formattedNumber}`);
 
     if (filePath && fs.existsSync(filePath)) {
       const media = await MessageMedia.fromFilePath(filePath);
-      await client.sendMessage(formattedNumber, media)
-      console.log('PDF enviado exitosamente');
+      await client.sendMessage(formattedNumber, media);
+      console.log('✅ PDF enviado');
     } else {
-      console.error('El archivo no existe o la ruta es incorrecta');
+      console.error('❌ El archivo no existe o la ruta es incorrecta');
     }
   } catch (error) {
-    console.error('Error al enviar el PDF:', error);
+    console.error('❌ Error al enviar PDF:', error);
   }
 };
 
-// Exportaciones
 module.exports = {
   initializeClient,
-  handleQRGeneration,
-  handleAuthentication,
-  handleDisconnection,
-  sendPDF,
-  setSocket
+  setSocket,
+  sendPDF
 };
