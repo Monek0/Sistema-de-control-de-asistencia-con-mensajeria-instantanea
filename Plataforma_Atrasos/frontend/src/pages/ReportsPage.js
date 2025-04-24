@@ -10,7 +10,6 @@ import AttendanceReportCustomRange from '../components/AttendanceReportCustomRan
 
 Modal.setAppElement('#root');
 
-// ✅ URL dinámica
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
   : 'https://api.edupuntual.cl';
@@ -22,7 +21,6 @@ const ReportsPage = () => {
   const [monthlyTrend, setMonthlyTrend] = useState([]);
   const [topUsers, setTopUsers] = useState([]);
   const [justifiedVsNot, setJustifiedVsNot] = useState([]);
-
   const [showDailyModal, setShowDailyModal] = useState(false);
   const [showWeeklyModal, setShowWeeklyModal] = useState(false);
 
@@ -51,11 +49,10 @@ const ReportsPage = () => {
     }).catch(console.error);
   }, []);
 
-
   const styles = {
-    kpiContainer: { display: 'flex', gap: 20, marginBottom: 40 },
+    kpiContainer: { display: 'flex', gap: 20, marginBottom: 40, flexWrap: 'wrap' },
     kpiCard: {
-      flex: 1,
+      flex: '1 1 30%',
       background: '#fff',
       borderRadius: 8,
       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -63,15 +60,24 @@ const ReportsPage = () => {
       textAlign: 'center'
     },
     kpiIcon: { fontSize: 32, marginBottom: 10, color: '#01579b' },
-    chartContainer: { display: 'flex', gap: 40, marginBottom: 40 },
+    chartContainer: {
+      display: 'flex',
+      gap: 40,
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      marginBottom: 40
+    },
     chartBox: {
-      flex: 1,
+      flex: '1 1 300px',
+      minWidth: '300px',
+      maxWidth: '100%',
       background: '#fff',
       borderRadius: 8,
       padding: 20,
-      height: 300
+      height: 300,
+      boxSizing: 'border-box'
     },
-    controls: { display: 'flex', gap: 10, marginBottom: 20 },
+    controls: { display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' },
     button: {
       padding: '10px 20px',
       backgroundColor: '#007bff',
@@ -82,17 +88,17 @@ const ReportsPage = () => {
       transition: 'background-color 0.3s'
     },
     modalContent: {
-        position: 'relative',
-        top: '15%',
-        bottom: '15%',
-        maxWidth: '900px',
-        width: '90%',
-        margin: 'auto',
-        borderRadius: 8,
-        padding: 20,
-        maxHeight: '70vh',
-        overflowY: 'auto'
-      },
+      position: 'relative',
+      top: '15%',
+      bottom: '15%',
+      maxWidth: '900px',
+      width: '90%',
+      margin: 'auto',
+      borderRadius: 8,
+      padding: 20,
+      maxHeight: '70vh',
+      overflowY: 'auto'
+    },
     closeButton: {
       position: 'absolute',
       top: 10,
@@ -105,11 +111,9 @@ const ReportsPage = () => {
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: 'Arial, sans-serif' }}>
-      {/* KPI Cards */}
+    <div style={{ padding: 20, fontFamily: 'Arial, sans-serif', overflowX: 'hidden' }}>
       <div style={styles.kpiContainer}>
-        {[
-          { label: 'Atrasos Hoy', value: kpis.daily, icon: '📅' },
+        {[{ label: 'Atrasos Hoy', value: kpis.daily, icon: '📅' },
           { label: 'Atrasos Semana', value: kpis.weekly, icon: '🗓️' },
           { label: 'Atrasos Mes', value: kpis.monthly, icon: '📈' }
         ].map(({ label, value, icon }) => (
@@ -121,57 +125,57 @@ const ReportsPage = () => {
         ))}
       </div>
 
-      {/* Charts */}
-      <div style={styles.chartContainer}>
-        <div style={styles.chartBox}>
-          <h4>Tendencia mensual</h4>
-          <ResponsiveContainer width="100%" height="80%">
-            <LineChart data={monthlyTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#01579b" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <div style={styles.chartBox}>
-          <h4>Top 5 usuarios</h4>
-          <ResponsiveContainer width="100%" height="80%">
-            <BarChart data={topUsers}>
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#0288d1">
-                <LabelList dataKey="value" position="top" />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div style={styles.chartBox}>
-          <h4>Justificados vs No Justificados</h4>
-          <ResponsiveContainer width="100%" height="80%">
-            <PieChart>
-              <Pie
-                data={justifiedVsNot}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={50}
-                outerRadius={80}
-                fill="#82ca9d"
-                label
-              >
-                {justifiedVsNot.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ ...styles.chartContainer, minWidth: '800px' }}>
+          <div style={styles.chartBox}>
+            <h4>Tendencia mensual</h4>
+            <ResponsiveContainer width="100%" height="80%">
+              <LineChart data={monthlyTrend}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#01579b" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={styles.chartBox}>
+            <h4>Top 5 usuarios</h4>
+            <ResponsiveContainer width="100%" height="80%">
+              <BarChart data={topUsers}>
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#0288d1">
+                  <LabelList dataKey="value" position="top" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={styles.chartBox}>
+            <h4>Justificados vs No Justificados</h4>
+            <ResponsiveContainer width="100%" height="80%">
+              <PieChart>
+                <Pie
+                  data={justifiedVsNot}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={80}
+                  fill="#82ca9d"
+                  label
+                >
+                  {justifiedVsNot.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
-      {/* Controls */}
       <div style={styles.controls}>
         <button style={styles.button} onClick={() => setShowDailyModal(true)}>
           Mostrar Reporte Diario
@@ -181,7 +185,6 @@ const ReportsPage = () => {
         </button>
       </div>
 
-      {/* Daily Modal */}
       <Modal
         isOpen={showDailyModal}
         onRequestClose={() => setShowDailyModal(false)}
@@ -193,7 +196,6 @@ const ReportsPage = () => {
         <AttendanceReport />
       </Modal>
 
-      {/* Weekly Modal */}
       <Modal
         isOpen={showWeeklyModal}
         onRequestClose={() => setShowWeeklyModal(false)}
