@@ -20,7 +20,6 @@ const app = express();
 // Configuración de CORS
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:3000',
-  'http://localhost:3001',
   process.env.FRONTEND_URL_PROD
 ].filter(Boolean);
 console.log('CORS allowed origins:', allowedOrigins);
