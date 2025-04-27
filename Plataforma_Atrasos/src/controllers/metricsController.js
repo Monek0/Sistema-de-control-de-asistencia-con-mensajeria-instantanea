@@ -60,3 +60,5 @@ exports.getJustifiedVsNot = async (req, res) => {
       res.status(500).json({ message: 'Error al obtener justificados vs no justificados' });
     }
   };
+
+  

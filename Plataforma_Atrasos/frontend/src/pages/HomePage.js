@@ -25,7 +25,8 @@ const HomePage = () => {
   const [activeMenu, setActiveMenu] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [userRole, setUserRole] = useState(null); 
+  const [userRole, setUserRole] = useState(null);
+  const [whatsappConnected, setWhatsappConnected] = useState(false); // 👈 Nuevo estado
 
   useEffect(() => {
     const handleResize = () => {
@@ -68,15 +69,38 @@ const HomePage = () => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        setUserRole(decoded.role || decoded.cod_rol); // Asegura compatibilidad
+        setUserRole(decoded.role || decoded.cod_rol);
       } catch (err) {
         console.error('Error decodificando el token:', err);
       }
     }
   }, []);
 
-  // ... (resto del código permanece igual)
+  // Nueva conexión a Socket.io para saber estado de WhatsApp
+  useEffect(() => {
+    const socket = require('socket.io-client')(API_BASE_URL, {
+      transports: ['websocket'],
+    });
 
+    socket.on('authenticated', () => {
+      setWhatsappConnected(true);
+    });
+
+    socket.on('disconnected', () => {
+      setWhatsappConnected(false);
+    });
+
+    socket.on('auth_failure', () => {
+      setWhatsappConnected(false);
+    });
+
+    socket.on('logout', () => {
+      console.log('Se recibió logout por SocketIO');
+      setWhatsappConnected(false);
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   const handleMenuClick = (action) => {
     setActiveMenu(action);
@@ -162,6 +186,16 @@ const HomePage = () => {
       marginBottom: '1rem',
       alignSelf: 'center',
     },
+    whatsappStatus: { // 👈 Estilo para el nuevo estado
+      marginTop: '10px',
+      padding: '8px',
+      borderRadius: '8px',
+      backgroundColor: whatsappConnected ? '#d4edda' : '#f8d7da',
+      color: whatsappConnected ? '#155724' : '#721c24',
+      textAlign: 'center',
+      fontSize: '0.8rem',
+      fontWeight: 'bold',
+    },
     topbar: {
       backgroundColor: '#fff',
       padding: '1rem',
@@ -240,6 +274,12 @@ const HomePage = () => {
             <MenuItem icon={agregarIcon} text="Registrar Usuario" action="registro" />
           )}
           <img src={logo} alt="Logo" style={styles.logo} />
+
+          {/* ✅ Estado de WhatsApp */}
+          <div style={styles.whatsappStatus}>
+            {whatsappConnected ? '✅ WhatsApp conectado' : '❌ WhatsApp desconectado'}
+          </div>
+
         </div>
       </div>
 
