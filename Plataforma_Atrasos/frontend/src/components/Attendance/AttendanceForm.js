@@ -5,16 +5,15 @@ const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
   : 'https://api.edupuntual.cl';
 
-
 const AttendanceForm = ({ onSuccess, currentData }) => {
     const [rutAlumno, setRutAlumno] = useState(currentData?.rutAlumno || '');
-    const [nombreAlumno, setNombreAlumno] = useState(''); // Estado para almacenar el nombre del alumno
-    const [mostrarJustificativo, setMostrarJustificativo] = useState(false); // Control para mostrar justificativos
+    const [nombreAlumno, setNombreAlumno] = useState('');
+    const [mostrarJustificativo, setMostrarJustificativo] = useState(false);
     const [fechaAtrasos, setFechaAtraso] = useState(new Date());
     const [error, setError] = useState('');
     const [notificationVisible, setNotificationVisible] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [baucherPath, setBaucherPath] = useState(null); // Ruta del baucher generado
+    const [baucherPath, setBaucherPath] = useState(null);
     const rutInputRef = useRef(null);
 
     useEffect(() => {
@@ -39,7 +38,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
         setMostrarJustificativo(false);
         setFechaAtraso(new Date());
         setError('');
-        setBaucherPath(null); // Limpiar la ruta del baucher
+        setBaucherPath(null);
         rutInputRef.current?.focus();
     };
 
@@ -53,38 +52,18 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
         }
     };
 
-    // const obtenerDatosAlumno = async (rut) => {
-    //     try {
-    //         const response = await axios.get(`${API_BASE_URL}/api/alumnos/${rut}`);
-    //         if (response.status === 200) {
-    //             const { nombre, justificativo } = response.data;
-    //             setNombreAlumno(nombre);
-    //             setMostrarJustificativo(justificativo); // Determinar si hay justificativos
-    //         }
-    //     } catch (error) {
-    //         console.error('Error al obtener los datos del alumno:', error);
-    //         setNombreAlumno('');
-    //         setMostrarJustificativo(false);
-    //     }
-    // };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setBaucherPath(null); // Limpiar cualquier baucher anterior
+        setBaucherPath(null);
 
         try {
-            // Validar que el RUT existe antes de enviar el formulario
             const rutExiste = await validarRutExistente(rutAlumno);
             if (!rutExiste) {
                 setError('El RUT ingresado no existe en la base de datos');
                 return;
             }
 
-            // Obtener datos adicionales del alumno antes de enviar
-            //await obtenerDatosAlumno(rutAlumno);
-
-            // Enviar datos al backend para registrar el atraso
             const url = currentData
                 ? `${API_BASE_URL}/api/atrasos/${currentData.id}`
                 : `${API_BASE_URL}/api/atrasos`;
@@ -92,14 +71,12 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
             const response = await method(url, { rutAlumno, fechaAtrasos });
 
             if (response.status === 201) {
-                const { baucherPath } = response.data; // Ruta del PDF generada en el backend
+                const { baucherPath } = response.data;
                 setSuccessMessage('Atraso registrado con éxito.');
                 setBaucherPath(baucherPath);
                 setNotificationVisible(true);
                 if (onSuccess) onSuccess();
                 resetForm();
-
-                // Abre el PDF en una nueva ventana para ver/descargar/print
                 window.open(`${API_BASE_URL}${baucherPath}`, '_blank');
             } else {
                 setError('Error al registrar el atraso.');
@@ -112,7 +89,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
     const handleDownloadBaucher = () => {
         if (baucherPath) {
-            window.open(`${API_BASE_URL}/${baucherPath}`, '_blank'); // Abrir el PDF en una nueva ventana
+            window.open(`${API_BASE_URL}/${baucherPath}`, '_blank');
         }
     };
 
@@ -122,6 +99,23 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
             return () => clearTimeout(timer);
         }
     }, [notificationVisible]);
+
+   
+    const formatearRut = (valor) => {
+        valor = valor.replace(/[^0-9kK]/g, '');
+        if (valor.length <= 1) return valor;
+
+        const cuerpo = valor.slice(0, -1);
+        let dv = valor.slice(-1).toUpperCase();
+        let cuerpoFormateado = '';
+        for (let i = cuerpo.length - 1, j = 1; i >= 0; i--, j++) {
+            cuerpoFormateado = cuerpo[i] + cuerpoFormateado;
+            if (j % 3 === 0 && i !== 0) {
+                cuerpoFormateado = '.' + cuerpoFormateado;
+            }
+        }
+        return `${cuerpoFormateado}-${dv}`;
+    };
 
     const styles = {
         container: {
@@ -221,7 +215,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
                         ref={rutInputRef}
                         type="text"
                         value={rutAlumno}
-                        onChange={(e) => setRutAlumno(e.target.value)}
+                        onChange={(e) => setRutAlumno(formatearRut(e.target.value))}
                         placeholder="Ingrese RUT"
                         required
                         style={styles.input}

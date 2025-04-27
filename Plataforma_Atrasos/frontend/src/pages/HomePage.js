@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { motion } from 'framer-motion';
 
 import controlIcon from '../assets/icons/control.png';
 import reportIcon from '../assets/icons/report.png';
@@ -14,7 +15,6 @@ import AtrasosPage from './AtrasosPage';
 import RegisterPage from './RegisterPage';
 import logo from '../assets/images/logo.png';
 
-// ✅ URL dinámica
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
   : 'https://api.edupuntual.cl';
@@ -26,19 +26,16 @@ const HomePage = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [userRole, setUserRole] = useState(null);
-  const [whatsappConnected, setWhatsappConnected] = useState(false); // 👈 Nuevo estado
+  const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768) {
-        setIsSidebarOpen(true);
-      }
+      if (window.innerWidth >= 768) setIsSidebarOpen(true);
     };
-
     window.addEventListener('resize', handleResize);
     handleResize();
-
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -47,17 +44,12 @@ const HomePage = () => {
       try {
         const token = localStorage.getItem('token');
         const rutUsername = localStorage.getItem('rut_username');
-        const response = await axios.get(
-          `${API_BASE_URL}/auth/username/${rutUsername}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await axios.get(`${API_BASE_URL}/auth/username/${rutUsername}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setUserName(response.data?.nombre_usuario || 'No te encontré');
       } catch (error) {
-        console.error('Error al obtener el nombre de usuario:', error);
+        console.error('Error al obtener nombre de usuario:', error);
         setUserName('No te encontré');
       }
     };
@@ -71,42 +63,23 @@ const HomePage = () => {
         const decoded = jwtDecode(token);
         setUserRole(decoded.role || decoded.cod_rol);
       } catch (err) {
-        console.error('Error decodificando el token:', err);
+        console.error('Error decodificando token:', err);
       }
     }
   }, []);
 
-  // Nueva conexión a Socket.io para saber estado de WhatsApp
   useEffect(() => {
-    const socket = require('socket.io-client')(API_BASE_URL, {
-      transports: ['websocket'],
-    });
-
-    socket.on('authenticated', () => {
-      setWhatsappConnected(true);
-    });
-
-    socket.on('disconnected', () => {
-      setWhatsappConnected(false);
-    });
-
-    socket.on('auth_failure', () => {
-      setWhatsappConnected(false);
-    });
-
-    socket.on('logout', () => {
-      console.log('Se recibió logout por SocketIO');
-      setWhatsappConnected(false);
-    });
-
+    const socket = require('socket.io-client')(API_BASE_URL, { transports: ['websocket'] });
+    socket.on('authenticated', () => setWhatsappConnected(true));
+    socket.on('disconnected', () => setWhatsappConnected(false));
+    socket.on('auth_failure', () => setWhatsappConnected(false));
+    socket.on('logout', () => setWhatsappConnected(false));
     return () => socket.disconnect();
   }, []);
 
   const handleMenuClick = (action) => {
     setActiveMenu(action);
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
+    if (isMobile) setIsSidebarOpen(false);
   };
 
   const handleLogout = () => {
@@ -118,9 +91,9 @@ const HomePage = () => {
     pageContainer: {
       display: 'flex',
       minHeight: '100vh',
-      backgroundColor: '#f7f9f9',
+      background: 'linear-gradient(135deg, #e0f7fa, #f7f9f9)',
       position: 'relative',
-      fontFamily: 'sans-serif',
+      fontFamily: 'Poppins, sans-serif',
     },
     hamburgerButton: {
       position: 'fixed',
@@ -134,7 +107,6 @@ const HomePage = () => {
       color: 'white',
       cursor: 'pointer',
       display: isMobile ? 'block' : 'none',
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15)',
     },
     overlay: {
       position: 'fixed',
@@ -157,7 +129,6 @@ const HomePage = () => {
       display: 'flex',
       flexDirection: 'column',
       flexShrink: 0,
-      boxShadow: '2px 0 8px rgba(0,0,0,0.2)',
     },
     sidebarContent: {
       padding: '1.5rem',
@@ -165,6 +136,12 @@ const HomePage = () => {
       display: 'flex',
       flexDirection: 'column',
       overflowY: 'auto',
+    },
+    separator: {
+      height: '1px',
+      background: 'white',
+      margin: '1rem 0',
+      opacity: 0.3,
     },
     menuItem: {
       display: 'flex',
@@ -186,7 +163,7 @@ const HomePage = () => {
       marginBottom: '1rem',
       alignSelf: 'center',
     },
-    whatsappStatus: { // 👈 Estilo para el nuevo estado
+    whatsappStatus: {
       marginTop: '10px',
       padding: '8px',
       borderRadius: '8px',
@@ -212,15 +189,6 @@ const HomePage = () => {
       paddingLeft: isMobile ? '3rem' : '1rem',
       paddingRight: '1rem',
     },
-    logoutButton: {
-      backgroundColor: '#e74c3c',
-      color: 'white',
-      padding: '0.5rem 1rem',
-      borderRadius: '0.375rem',
-      border: 'none',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s, transform 0.3s',
-    },
     contentArea: {
       padding: '1.5rem',
       flex: 1,
@@ -233,32 +201,50 @@ const HomePage = () => {
       width: '100%',
       minHeight: '100vh',
     },
+    userDropdown: {
+      cursor: 'pointer',
+      position: 'relative',
+      color: '#333',
+    },
+    dropdownMenu: {
+      position: 'absolute',
+      top: '40px',
+      right: 0,
+      background: '#fff',
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      zIndex: 100,
+    },
+    dropdownItem: {
+      padding: '10px',
+      cursor: 'pointer',
+      fontWeight: '500',
+      fontSize: '14px',
+      color: '#333',
+    },
   };
 
   const MenuItem = ({ icon, text, action }) => {
     const isActive = activeMenu === action;
     return (
-      <div
+      <motion.div
         style={{
           ...styles.menuItem,
-          backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+          backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'transparent',
         }}
+        whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.3)' }}
         onClick={() => handleMenuClick(action)}
-        className="hover:bg-blue-800 transition transform hover:scale-105"
       >
         <img src={icon} alt={text} style={styles.icon} />
         <span>{text}</span>
-      </div>
+      </motion.div>
     );
   };
 
   return (
     <div style={styles.pageContainer}>
-      <button
-        style={styles.hamburgerButton}
-        className="transition transform hover:scale-105"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
+      <button style={styles.hamburgerButton} onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
@@ -267,51 +253,48 @@ const HomePage = () => {
       <div style={styles.sidebar}>
         <div style={styles.sidebarContent}>
           <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Menú</h3>
-          <MenuItem icon={controlIcon} text="Control de atrasos" action="attendance" />
+          <MenuItem icon={controlIcon} text="Control de Atrasos" action="attendance" />
           <MenuItem icon={reportIcon} text="Reportes" action="reports" />
           <MenuItem icon={messageIcon} text="Mensajería" action="atrasos" />
           {userRole && (userRole === 1 || userRole === 3) && (
             <MenuItem icon={agregarIcon} text="Registrar Usuario" action="registro" />
           )}
+          <div style={styles.separator}></div>
           <img src={logo} alt="Logo" style={styles.logo} />
-
-          {/* ✅ Estado de WhatsApp */}
           <div style={styles.whatsappStatus}>
             {whatsappConnected ? '✅ WhatsApp conectado' : '❌ WhatsApp desconectado'}
           </div>
-
         </div>
       </div>
 
       <div style={styles.mainContent}>
         <div style={styles.topbar}>
           <div style={styles.topbarContent}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>
-              Sistema de Control de Atrasos
-            </h2>
-            <button
-              style={styles.logoutButton}
-              className="hover:bg-red-600 transition transform hover:scale-105"
-              onClick={handleLogout}
-            >
-              Cerrar Sesión
-            </button>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{activeMenu === 'attendance' ? 'Control de Atrasos' : activeMenu === 'reports' ? 'Reportes' : activeMenu === 'atrasos' ? 'Mensajería' : activeMenu === 'registro' ? 'Registrar Usuario' : 'Inicio'}</h2>
+            <div style={styles.userDropdown} onClick={() => setShowLogout(!showLogout)}>
+              {userName} ▼
+              {showLogout && (
+                <div style={styles.dropdownMenu}>
+                  <div style={styles.dropdownItem} onClick={handleLogout}>
+                    <LogOut size={16} style={{ marginRight: '8px' }} />Cerrar Sesión
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div style={styles.contentArea}>
+        <motion.div style={styles.contentArea} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
           {activeMenu === 'home' && (
             <div className="text-center md:text-left">
-              <h3 className="text-2xl font-bold mb-4">
-                Bienvenido, {userName}!
-              </h3>
+              <h3 className="text-2xl font-bold mb-4">Bienvenido, {userName}!</h3>
             </div>
           )}
           {activeMenu === 'attendance' && <AttendancePage />}
           {activeMenu === 'reports' && <ReportsPage />}
           {activeMenu === 'atrasos' && <AtrasosPage />}
           {activeMenu === 'registro' && <RegisterPage />}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
