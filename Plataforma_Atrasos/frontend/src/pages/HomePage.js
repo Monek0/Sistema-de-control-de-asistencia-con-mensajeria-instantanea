@@ -69,13 +69,21 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
-    const socket = require('socket.io-client')(API_BASE_URL, { transports: ['websocket'] });
-    socket.on('authenticated', () => setWhatsappConnected(true));
-    socket.on('disconnected', () => setWhatsappConnected(false));
-    socket.on('auth_failure', () => setWhatsappConnected(false));
-    socket.on('logout', () => setWhatsappConnected(false));
-    return () => socket.disconnect();
+    const fetchWhatsappStatus = async () => {
+      try {
+        const socket = require('socket.io-client')(API_BASE_URL, { transports: ['websocket'] });
+        socket.emit('get_status');
+        socket.on('authenticated', () => setWhatsappConnected(true));
+        socket.on('disconnected', () => setWhatsappConnected(false));
+      } catch (error) {
+        console.error('Error preguntando estado inicial de WhatsApp:', error);
+        setWhatsappConnected(false);
+      }
+    };
+  
+    fetchWhatsappStatus();
   }, []);
+  
 
   const handleMenuClick = (action) => {
     setActiveMenu(action);
@@ -174,16 +182,17 @@ const HomePage = () => {
       fontWeight: 'bold',
     },
     topbar: {
-      backgroundColor: '#fff',
       padding: '1rem',
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
       position: 'sticky',
       top: 0,
       zIndex: 20,
+      backgroundColor: '#01579b',
+      color: '#fff',
     },
     topbarContent: {
       display: 'flex',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       alignItems: 'center',
       width: '100%',
       paddingLeft: isMobile ? '3rem' : '1rem',
@@ -205,7 +214,18 @@ const HomePage = () => {
       cursor: 'pointer',
       position: 'relative',
       color: '#333',
+      padding: '0.4rem 0.8rem',          // Espacio interno cómodo
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+      backgroundColor: '#fff',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+      transition: 'box-shadow 0.3s ease',
+      marginRight: '10px',               // Separarlo del borde derecho
+      display: 'inline-block',           // 👈 Importante: Se adapta al contenido
+      whiteSpace: 'nowrap',              // 👈 Importante: No permite que el texto se corte o salte línea
     },
+    
+    
     dropdownMenu: {
       position: 'absolute',
       top: '40px',
@@ -270,7 +290,7 @@ const HomePage = () => {
       <div style={styles.mainContent}>
         <div style={styles.topbar}>
           <div style={styles.topbarContent}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{activeMenu === 'attendance' ? 'Control de Atrasos' : activeMenu === 'reports' ? 'Reportes' : activeMenu === 'atrasos' ? 'Mensajería' : activeMenu === 'registro' ? 'Registrar Usuario' : 'Inicio'}</h2>
+            {/* <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{activeMenu === 'attendance' ? 'Control de Atrasos' : activeMenu === 'reports' ? 'Reportes' : activeMenu === 'atrasos' ? 'Mensajería' : activeMenu === 'registro' ? 'Registrar Usuario' : 'Inicio'}</h2> */}
             <div style={styles.userDropdown} onClick={() => setShowLogout(!showLogout)}>
               {userName} ▼
               {showLogout && (

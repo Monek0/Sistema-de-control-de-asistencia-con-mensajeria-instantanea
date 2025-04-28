@@ -74,6 +74,9 @@ const WhatsappLoginModal = ({ isOpen, onRequestClose }) => {
       // Emite el evento 'logout'; en el backend deberá gestionarse este evento para cerrar la sesión de WhatsApp
       socket.emit('logout');
       setStatusMessage('Cerrando sesión...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     }
   };
 
