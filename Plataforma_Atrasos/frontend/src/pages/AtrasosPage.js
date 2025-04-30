@@ -149,8 +149,7 @@ const AtrasosPage = () => {
 
     const styles = {
         container: {
-            maxWidth: '1200px',
-            margin: '2rem auto',
+            margin: 'auto',
             padding: '1.5rem',
             backgroundColor: '#fff',
             borderRadius: '0.5rem',

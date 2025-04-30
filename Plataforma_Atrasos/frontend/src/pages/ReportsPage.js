@@ -61,49 +61,77 @@ const ReportsPage = () => {
   }, []);
 
   const styles = {
-    container: { padding: 20, fontFamily: 'Poppins, Arial, sans-serif', backgroundColor: '#f0f2f5' },
-    kpiContainer: { display: 'flex', gap: 20, marginBottom: 40, flexWrap: 'wrap' },
-    kpiCard: {
-      flex: '1 1 30%',
-      background: '#fff',
-      borderRadius: 8,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      padding: 20,
-      textAlign: 'center',
-      transition: 'transform 0.2s, box-shadow 0.2s',
-      cursor: 'pointer'
+    button: {
+      backgroundColor: '#007bff',
+      border: 'none',
+      borderRadius: '0.3125rem',
+      color: '#fff',
+      cursor: 'pointer',
+      margin: '0.3125rem',
+      padding: '0.625rem 1.25rem',
+      transition: 'background-color 0.3s'
     },
-    kpiCardHover: {
-      transform: 'scale(1.02)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-    },
-    section: { marginBottom: 40 },
-    title: { fontSize: '1.25rem', fontWeight: 'bold', marginBottom: 10 },
     chartBox: {
       background: '#fff',
-      borderRadius: 8,
-      padding: 20,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      borderRadius: '0.5rem',
+      boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
+      padding: '1.25rem'
     },
-    description: { fontSize: 14, color: '#666', marginTop: 5 },
+    container: {
+      backgroundColor: '#f0f2f5',
+      fontFamily: 'Poppins, Arial, sans-serif',
+      margin: '0 auto',
+      paddingInline: '2rem',
+      paddingTop: '1.25rem',
+      paddingBottom: '1.25rem'
+    },
+    description: {
+      color: '#666',
+      fontSize: '0.875rem',
+      marginTop: '0.3125rem'
+    },
+    kpiCard: {
+      background: '#fff',
+      borderRadius: '0.5rem',
+      boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
+      cursor: 'pointer',
+      flex: '1 1 30%',
+      padding: '1.25rem',
+      textAlign: 'center',
+      transition: 'transform 0.2s, box-shadow 0.2s'
+    },
+    kpiCardHover: {
+      boxShadow: '0 0.25rem 0.75rem rgba(0,0,0,0.15)',
+      transform: 'scale(1.02)'
+    },
+    kpiContainer: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '1.25rem',
+      marginBottom: '2.5rem'
+    },
     listContainer: {
       background: '#fff',
-      padding: 20,
-      borderRadius: 8,
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      borderRadius: '0.5rem',
+      boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
+      padding: '1.25rem'
     },
-    listItem: { padding: 8, borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' },
-    button: {
-      padding: '10px 20px',
-      backgroundColor: '#007bff',
-      color: '#fff',
-      border: 'none',
-      borderRadius: 5,
-      cursor: 'pointer',
-      transition: 'background-color 0.3s',
-      margin: '5px'
+    listItem: {
+      borderBottom: '1px solid #eee',
+      display: 'flex',
+      justifyContent: 'space-between',
+      padding: '0.5rem'
+    },
+    section: {
+      marginBottom: '2.5rem'
+    },
+    title: {
+      fontSize: '1.25rem',
+      fontWeight: 'bold',
+      marginBottom: '0.625rem'
     }
   };
+  
 
   return (
     <div style={styles.container}>
@@ -142,52 +170,52 @@ const ReportsPage = () => {
         </div>
       </div>
 
-      {/* Justificados vs No Justificados */}
-      <div style={styles.section}>
-        <div style={styles.chartBox}>
-          <h3 style={styles.title}>Distribución de Atrasos Justificados y No Justificados</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={justifiedVsNot}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={50}
-                outerRadius={80}
-                label
-              >
-                {justifiedVsNot.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <p style={styles.description}>
-            Este gráfico muestra la proporción de atrasos que fueron justificados frente a los que no lo fueron.
-          </p>
-        </div>
-      </div>
+      {/* Sección de Distribución y Top 5 en línea */}
+<div style={{ ...styles.section, display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+  {/* Gráfico de Pie */}
+  <div style={{ ...styles.chartBox, flex: 1, minWidth: 300 }}>
+    <h3 style={styles.title}>Distribución de Atrasos Justificados y No Justificados</h3>
+    <ResponsiveContainer width="100%" height={300}>
+      <PieChart>
+        <Pie
+          data={justifiedVsNot}
+          dataKey="value"
+          nameKey="name"
+          innerRadius={50}
+          outerRadius={80}
+          label
+        >
+          {justifiedVsNot.map((_, i) => (
+            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip />
+      </PieChart>
+    </ResponsiveContainer>
+    <p style={styles.description}>
+      Este gráfico muestra la proporción de atrasos que fueron justificados frente a los que no lo fueron.
+    </p>
+  </div>
 
-      {/* Top 5 Estudiantes */}
-      <div style={styles.section}>
-        <div style={styles.listContainer}>
-          <h3 style={styles.title}>Top 5 Estudiantes con Más Atrasos</h3>
-          {topUsers.length > 0 ? (
-            topUsers.map((user, idx) => {
-              const color = user.value > 5 ? '#f44336' : user.value > 2 ? '#ff9800' : '#4caf50';
-              return (
-                <div key={idx} style={{ ...styles.listItem }}>
-                  <span>{idx + 1}. {user.name}</span>
-                  <span style={{ color }}>{user.value} atrasos</span>
-                </div>
-              );
-            })
-          ) : (
-            <p>No hay registros suficientes.</p>
-          )}
-        </div>
-      </div>
+  {/* Lista de Top 5 */}
+  <div style={{ ...styles.listContainer, flex: 1, minWidth: 300 }}>
+    <h3 style={styles.title}>Top 5 Estudiantes con Más Atrasos</h3>
+    {topUsers.length > 0 ? (
+      topUsers.map((user, idx) => {
+        const color = user.value > 5 ? '#f44336' : user.value > 2 ? '#ff9800' : '#4caf50';
+        return (
+          <div key={idx} style={{ ...styles.listItem }}>
+            <span>{idx + 1}. {user.name}</span>
+            <span style={{ color }}>{user.value} atrasos</span>
+          </div>
+        );
+      })
+    ) : (
+      <p>No hay registros suficientes.</p>
+    )}
+  </div>
+</div>
+
 
       {/* Botones Reportes */}
       <div style={{ textAlign: 'center' }}>

@@ -80,10 +80,9 @@ const HomePage = () => {
         setWhatsappConnected(false);
       }
     };
-  
+
     fetchWhatsappStatus();
   }, []);
-  
 
   const handleMenuClick = (action) => {
     setActiveMenu(action);
@@ -98,10 +97,10 @@ const HomePage = () => {
   const styles = {
     pageContainer: {
       display: 'flex',
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'hidden',
       background: 'linear-gradient(135deg, #e0f7fa, #f7f9f9)',
-      position: 'relative',
-      fontFamily: 'Poppins, sans-serif',
+      fontFamily: 'Poppins, sans-serif'
     },
     hamburgerButton: {
       position: 'fixed',
@@ -114,21 +113,21 @@ const HomePage = () => {
       borderRadius: '0.375rem',
       color: 'white',
       cursor: 'pointer',
-      display: isMobile ? 'block' : 'none',
+      display: isMobile ? 'block' : 'none'
     },
     overlay: {
       position: 'fixed',
       inset: 0,
       backgroundColor: 'rgba(0, 0, 0, 0.4)',
       zIndex: 30,
-      display: isMobile && isSidebarOpen ? 'block' : 'none',
+      display: isMobile && isSidebarOpen ? 'block' : 'none'
     },
     sidebar: {
       position: isMobile ? 'fixed' : 'sticky',
       top: 0,
       left: 0,
       height: '100vh',
-      width: '220px',
+      width: '13.75rem',
       backgroundColor: '#01579b',
       color: 'white',
       zIndex: 40,
@@ -136,20 +135,20 @@ const HomePage = () => {
       transition: 'transform 0.3s ease-in-out',
       display: 'flex',
       flexDirection: 'column',
-      flexShrink: 0,
+      flexShrink: 0
     },
     sidebarContent: {
       padding: '1.5rem',
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      overflowY: 'auto',
+      overflowY: 'auto'
     },
     separator: {
       height: '1px',
       background: 'white',
       margin: '1rem 0',
-      opacity: 0.3,
+      opacity: 0.3
     },
     menuItem: {
       display: 'flex',
@@ -158,91 +157,86 @@ const HomePage = () => {
       marginBottom: '0.5rem',
       borderRadius: '0.375rem',
       cursor: 'pointer',
-      transition: 'background-color 0.2s, transform 0.3s',
+      transition: 'background-color 0.2s, transform 0.3s'
     },
     icon: {
-      width: '24px',
-      height: '24px',
-      marginRight: '0.75rem',
+      width: '1.5rem',
+      height: '1.5rem',
+      marginRight: '0.75rem'
     },
     logo: {
       width: '90%',
       marginTop: 'auto',
       marginBottom: '1rem',
-      alignSelf: 'center',
+      alignSelf: 'center'
     },
     whatsappStatus: {
-      marginTop: '10px',
-      padding: '8px',
-      borderRadius: '8px',
+      marginTop: '0.625rem',
+      padding: '0.5rem',
+      borderRadius: '0.5rem',
       backgroundColor: whatsappConnected ? '#d4edda' : '#f8d7da',
       color: whatsappConnected ? '#155724' : '#721c24',
       textAlign: 'center',
       fontSize: '0.8rem',
-      fontWeight: 'bold',
+      fontWeight: 'bold'
     },
     topbar: {
       padding: '1rem',
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 20,
       backgroundColor: '#01579b',
-      color: '#fff',
+      color: '#fff'
     },
     topbarContent: {
       display: 'flex',
       justifyContent: 'flex-end',
       alignItems: 'center',
-      width: '100%',
-      paddingLeft: isMobile ? '3rem' : '1rem',
-      paddingRight: '1rem',
+      width: '100%'
     },
     contentArea: {
       padding: '1.5rem',
       flex: 1,
       width: '100%',
+      height: '100%',
+      overflowY: 'auto'
     },
     mainContent: {
-      flex: 1,
       display: 'flex',
       flexDirection: 'column',
       width: '100%',
-      minHeight: '100vh',
+      height: '100vh',
+      overflow: 'hidden'
     },
     userDropdown: {
       cursor: 'pointer',
       position: 'relative',
       color: '#333',
-      padding: '0.4rem 0.8rem',          // Espacio interno cómodo
+      padding: '0.4rem 0.8rem',
       border: '1px solid #ccc',
-      borderRadius: '8px',
+      borderRadius: '0.5rem',
       backgroundColor: '#fff',
       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
       transition: 'box-shadow 0.3s ease',
-      marginRight: '10px',               // Separarlo del borde derecho
-      display: 'inline-block',           // 👈 Importante: Se adapta al contenido
-      whiteSpace: 'nowrap',              // 👈 Importante: No permite que el texto se corte o salte línea
+      marginRight: '0.625rem',
+      display: 'inline-block',
+      whiteSpace: 'nowrap'
     },
-    
-    
     dropdownMenu: {
       position: 'absolute',
-      top: '40px',
+      top: '2.5rem',
       right: 0,
       background: '#fff',
       border: '1px solid #ccc',
-      borderRadius: '8px',
+      borderRadius: '0.5rem',
       boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-      zIndex: 100,
+      zIndex: 100
     },
     dropdownItem: {
-      padding: '10px',
+      padding: '0.625rem',
       cursor: 'pointer',
       fontWeight: '500',
-      fontSize: '14px',
-      color: '#333',
-    },
+      fontSize: '0.875rem',
+      color: '#333'
+    }
   };
 
   const MenuItem = ({ icon, text, action }) => {
@@ -251,7 +245,7 @@ const HomePage = () => {
       <motion.div
         style={{
           ...styles.menuItem,
-          backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'transparent',
+          backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'transparent'
         }}
         whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.3)' }}
         onClick={() => handleMenuClick(action)}
@@ -290,7 +284,6 @@ const HomePage = () => {
       <div style={styles.mainContent}>
         <div style={styles.topbar}>
           <div style={styles.topbarContent}>
-            {/* <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold' }}>{activeMenu === 'attendance' ? 'Control de Atrasos' : activeMenu === 'reports' ? 'Reportes' : activeMenu === 'atrasos' ? 'Mensajería' : activeMenu === 'registro' ? 'Registrar Usuario' : 'Inicio'}</h2> */}
             <div style={styles.userDropdown} onClick={() => setShowLogout(!showLogout)}>
               {userName} ▼
               {showLogout && (

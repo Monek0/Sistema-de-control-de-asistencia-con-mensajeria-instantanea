@@ -119,154 +119,145 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
   const styles = {
     mainContainer: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        gap: '30px',
-        marginTop: '30px',
-        padding: '20px',
-        flexWrap: 'wrap',
-        },
-        
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      gap: '2rem',
+      marginTop: '2rem',
+      padding: '1.25rem',
+      flexWrap: 'wrap'
+    },
     datetimeBox: {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f0f8ff',       // Azul clarito
-        padding: '20px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-        width: '100%',
-        minWidth: '300px',
-        minHeight: '300px',
-        maxWidth: '400px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#f0f8ff',
+      padding: '1.25rem',
+      borderRadius: '0.5rem',
+      boxShadow: '0 0.25rem 0.5rem rgba(0, 0, 0, 0.1)',
+      width: '100%',
+      minWidth: '18rem',
+      minHeight: '18rem',
+      maxWidth: '25rem'
     },
-        
     container: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#f0f8ff',       // 🔵 Ahora mismo color que datetimeBox
-        padding: '20px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-        width: '100%',
-        minWidth: '300px',
-        minHeight: '300px',
-        maxWidth: '400px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f0f8ff',
+      padding: '1.25rem',
+      borderRadius: '0.5rem',
+      boxShadow: '0 0.25rem 0.5rem rgba(0, 0, 0, 0.1)',
+      width: '98%',
+      minWidth: '18rem',
+      minHeight: '18rem',
+      maxWidth: '25rem'
     },
-        
     iconAndText1: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '12px',
-        color: '#01579b',
-        fontWeight: 'bold',
-        fontSize: '40px',       // 🔥 Más grande
-        marginBottom: '25px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.75rem',
+      color: '#01579b',
+      fontWeight: 'bold',
+      fontSize: '2.5rem',
+      marginBottom: '1.5rem'
     },
     iconAndText2: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '12px',
-        color: '#01579b',
-        fontWeight: 'bold',
-        fontSize: '45px',       // 🔥 Más grande
-        marginBottom: '25px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '0.75rem',
+      color: '#01579b',
+      fontWeight: 'bold',
+      fontSize: '2.75rem',
+      marginBottom: '1.5rem'
     },
-        
     icon: {
-        fontSize: '70px',        // 🔥 Más grande aún
+      fontSize: '4.375rem'
     },
-      
     title: {
       textAlign: 'center',
-      marginBottom: '20px',
-      fontSize: '24px',
-      color: '#333',
+      marginBottom: '1.25rem',
+      fontSize: '1.5rem',
+      color: '#333'
     },
     form: {
       width: '100%',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
+      alignItems: 'center'
     },
     label: {
       width: '100%',
-      marginBottom: '8px',
+      marginBottom: '0.5rem',
       fontWeight: 'bold',
-      color: '#555',
+      color: '#555'
     },
     inputContainer: {
       display: 'flex',
       width: '100%',
-      marginBottom: '20px',
-      gap: '10px',
+      marginBottom: '1.25rem',
+      gap: '0.625rem'
     },
     input: {
       flex: '1',
-      padding: '10px',
-      borderRadius: '4px',
-      border: '1px solid #ddd',
+      padding: '0.625rem',
+      borderRadius: '0.25rem',
+      border: '1px solid #ddd'
     },
     button: {
-        padding: '10px 15px',
-        backgroundColor: '#01579b',   // 🔵 Igual que el sidebar
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        fontWeight: 'bold',
-        width: '100%',
-        marginTop: '10px',
-      },
+      padding: '0.625rem 0.9375rem',
+      backgroundColor: '#01579b',
+      color: 'white',
+      border: 'none',
+      borderRadius: '0.25rem',
+      cursor: 'pointer',
+      fontWeight: 'bold',
+      width: '100%',
+      marginTop: '0.625rem'
+    },
     error: {
       color: '#dc3545',
       textAlign: 'center',
-      marginBottom: '15px',
-      padding: '10px',
+      marginBottom: '0.9375rem',
+      padding: '0.625rem',
       backgroundColor: '#ffe6e6',
-      borderRadius: '4px',
-      width: '100%',
+      borderRadius: '0.25rem',
+      width: '100%'
     },
     notification: {
       position: 'fixed',
-      bottom: '20px',
-      right: '20px',
+      bottom: '1.25rem',
+      right: '1.25rem',
       backgroundColor: '#28a745',
       color: 'white',
-      padding: '10px 20px',
-      borderRadius: '5px',
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+      padding: '0.625rem 1.25rem',
+      borderRadius: '0.3125rem',
+      boxShadow: '0 0.125rem 0.25rem rgba(0, 0, 0, 0.2)'
     },
     link: {
       color: '#007bff',
       textDecoration: 'underline',
-      cursor: 'pointer',
-    },
+      cursor: 'pointer'
+    }
   };
 
   return (
     <div style={styles.mainContainer}>
-      {/* Bloque Izquierdo: Fecha y Hora */}
       <div style={styles.datetimeBox}>
         <div style={styles.iconAndText1}>
-            <FaCalendarAlt style={styles.icon} />
-            <span>{fechaAtrasos.toLocaleDateString()}</span>
+          <FaCalendarAlt style={styles.icon} />
+          <span>{fechaAtrasos.toLocaleDateString()}</span>
         </div>
         <div style={styles.iconAndText2}>
-            <FaClock style={styles.icon} />
-            <span>{fechaAtrasos.toLocaleTimeString()}</span>
+          <FaClock style={styles.icon} />
+          <span>{fechaAtrasos.toLocaleTimeString()}</span>
         </div>
-        </div>
+      </div>
 
-
-
-      {/* Bloque Derecho: Formulario */}
       <div style={styles.container}>
         <h2 style={styles.title}>{currentData ? 'Editar Atraso' : 'Registrar Atraso'}</h2>
         {error && <p style={styles.error}>{error}</p>}
