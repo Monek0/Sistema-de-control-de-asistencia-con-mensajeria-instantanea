@@ -111,17 +111,25 @@ const registerEvents = (clientInstance) => {
   clientInstance.on('disconnected', async (reason) => {
     console.log('⚠️ Desconectado:', reason);
     isReady = false;
-    isInitializing = false;
+  
+    if (isInitializing) {
+      console.log('⏳ Ya se está reinicializando tras desconexión');
+      return;
+    }
+  
+    isInitializing = true;
     if (ioSocket) ioSocket.emit('disconnected', reason);
-
+  
     try {
       await clientInstance.destroy();
       client = null;
       await initializeClient();
     } catch (err) {
       console.error('❌ Error reiniciando cliente:', err);
+      isInitializing = false;
     }
   });
+  
 };
 
 const sendPDF = async (number, filePath) => {

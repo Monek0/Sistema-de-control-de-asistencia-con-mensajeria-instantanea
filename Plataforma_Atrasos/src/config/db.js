@@ -14,12 +14,9 @@ const pool = new Pool({
     ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
-pool.connect()
-    .then(() => {
-        console.log(
-            `Conexión exitosa a la base de datos PostgreSQL (${isProduction ? 'Producción' : 'Local'})`
-        );
-    })
+pool.query('SELECT 1')
+    .then(() => console.log(`Conexión verificada a PostgreSQL (${isProduction ? 'Producción' : 'Local'})`))
     .catch(err => console.error('Error conectando a la base de datos:', err));
+
 
 module.exports = pool;
