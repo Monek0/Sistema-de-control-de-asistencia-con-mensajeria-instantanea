@@ -1,9 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const path = require('path');
-const bodyParser = require('express').json;
 const http = require('http');
 const { Server } = require('socket.io');
 
@@ -11,9 +9,7 @@ const { Server } = require('socket.io');
 const authRoutes = require('./routes/authRoutes');
 const atrasosRoutes = require('./routes/atrasosRoutes');
 const justificativoRoutes = require('./routes/justificativoRoutes');
-const metricsRoutes = require('./routes/metricsRoutes')
-
-dotenv.config();
+const metricsRoutes = require('./routes/metricsRoutes');
 
 const app = express();
 
@@ -23,10 +19,11 @@ const allowedOrigins = [
   process.env.FRONTEND_URL_PROD
 ].filter(Boolean);
 console.log('CORS allowed origins:', allowedOrigins);
+
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
@@ -39,8 +36,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.use(bodyParser());
-app.use(express.json());
+app.use(express.json()); // ✅ suficiente, no uses bodyParser también
 
 // Archivos estáticos
 app.use('/SalidaPDF', express.static(path.join(__dirname, 'SalidaPDF')));
@@ -52,30 +48,26 @@ app.use('/api', atrasosRoutes);
 app.use('/api', justificativoRoutes);
 app.use('/api/metrics', metricsRoutes);
 
-
-// Aquí se crea el servidor HTTP y se integra con Socket.IO
+// Socket.IO
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins, // O usa '*' para pruebas
+    origin: allowedOrigins,
     methods: ['GET', 'POST']
   }
 });
 
-// Configura Socket.IO en tu controlador
 const whatsappController = require('./controllers/whatsappController');
 whatsappController.setSocket(io);
 
 io.on('connection', (socket) => {
   console.log('Cliente conectado via Socket.IO, ID:', socket.id);
-  // Puedes emitir un último QR o cualquier mensaje a nuevos clientes si lo deseas.
 });
 
-// Arranca el servidor en el puerto deseado
+// Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
-// Exporta app si lo necesitas para tests o middleware
 module.exports = app;
