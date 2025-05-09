@@ -201,7 +201,15 @@ exports.createAtraso = async (req, res) => {
                 curso,
                 nombre: `${alumno.nombre_alumno} ${alumno.apellido_paterno_alumno} ${alumno.apellido_materno_alumno}`,
                 rut: alumno.rut_alumno,
-                fecha: fechaAtrasos.toLocaleString(),
+                fecha: new Intl.DateTimeFormat('es-CL', {
+                    timeZone: 'America/Santiago',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }).format(fechaAtrasos),
+                  
                 codAtraso,
             });
 
