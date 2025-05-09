@@ -4,6 +4,10 @@ const PDFDocument = PDFDocumentLib.PDFDocument;
 const pool = require('../config/db');
 const fs = require('fs');
 
+// ✅ Leer los archivos una sola vez al inicio del módulo
+const formPdfBytes = fs.readFileSync('../Plataforma_Atrasos/frontend/src/assets/images/form.pdf');
+const logoImageBytes = fs.readFileSync('../Plataforma_Atrasos/frontend/src/assets/images/logo.png');
+
 // Función para formatear la fecha en hora local de Santiago, Chile
 function formatDateInChile(date) {
   return new Intl.DateTimeFormat('es-CL', {
@@ -26,9 +30,6 @@ exports.fillForm = async (rutAlumno, fechaAtraso) => {
     }
 
     const datosAlumno = result.rows[0];
-
-    const formPdfBytes = fs.readFileSync('../Plataforma_Atrasos/frontend/src/assets/images/form.pdf');
-    const logoImageBytes = fs.readFileSync('../Plataforma_Atrasos/frontend/src/assets/images/logo.png');
 
     const pdfDoc = await PDFDocument.load(formPdfBytes);
     const logoImage = await pdfDoc.embedPng(logoImageBytes);
@@ -79,7 +80,7 @@ exports.fillForm = async (rutAlumno, fechaAtraso) => {
         if (err) {
           reject('Error al escribir el archivo PDF');
         } else {
-          resolve(pdfFileName); // Devolver la ruta del archivo PDF
+          resolve(pdfFileName);
         }
       });
     });
