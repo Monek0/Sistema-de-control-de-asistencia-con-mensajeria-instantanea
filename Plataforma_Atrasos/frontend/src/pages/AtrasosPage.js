@@ -74,7 +74,7 @@ const AtrasosPage = () => {
 
         filteredAtrasos.forEach((atraso) => {
             if (yPosition < 60) {
-                page.drawText('Firma Apoderado ________________', {
+                page.drawText('Firma ________________', {
                     x: 30,
                     y: 40,
                     size: fontSize,
@@ -99,7 +99,7 @@ const AtrasosPage = () => {
             yPosition -= rowHeight;
         });
 
-        page.drawText('Firma Apoderado ________________', {
+        page.drawText('Firma ________________', {
             x: 30,
             y: 40,
             size: fontSize,

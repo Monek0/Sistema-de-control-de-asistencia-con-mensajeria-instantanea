@@ -196,7 +196,7 @@ const HomePage = () => {
       width: '100%' 
     },
     contentArea: { 
-      padding: '1.5rem', 
+      padding: '0rem', 
       flex: 1, 
       width: '100%', 
       height: '100%', 
@@ -298,7 +298,6 @@ const HomePage = () => {
             <MenuItem icon={agregarIcon} text="Registrar Usuario" action="registro" />
           )}
           <div style={styles.separator}></div>
-          <img src={logo} alt="Logo" style={styles.logo} />
           <div style={styles.whatsappStatus}>
             {whatsappConnected ? '✅ WhatsApp conectado' : '❌ WhatsApp desconectado'}
           </div>

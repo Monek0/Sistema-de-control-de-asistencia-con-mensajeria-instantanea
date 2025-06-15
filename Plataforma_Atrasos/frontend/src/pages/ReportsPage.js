@@ -62,28 +62,34 @@ const ReportsPage = () => {
 
   const styles = {
     button: {
-      backgroundColor: '#007bff',
+      backgroundColor: 'rgb(1, 87, 155)',
       border: 'none',
       borderRadius: '0.3125rem',
       color: '#fff',
       cursor: 'pointer',
       margin: '0.3125rem',
       padding: '0.625rem 1.25rem',
-      transition: 'background-color 0.3s'
+      fontSize: '0.875rem',
+      fontWeight: '500',
+      transition: 'background-color 0.3s ease, transform 0.2s ease',
+    },
+    buttonHover: {
+      backgroundColor: 'rgb(1, 67, 135)',
+      transform: 'translateY(-0.0625rem)',
     },
     chartBox: {
       background: '#fff',
       borderRadius: '0.5rem',
       boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
-      padding: '1.25rem'
+      padding: '1rem'
     },
     container: {
       backgroundColor: '#f0f2f5',
       fontFamily: 'Poppins, Arial, sans-serif',
       margin: '0 auto',
-      paddingInline: '2rem',
-      paddingTop: '1.25rem',
-      paddingBottom: '1.25rem'
+      paddingInline: '1rem',
+      paddingTop: '1rem',
+      paddingBottom: '1rem'
     },
     description: {
       color: '#666',
@@ -95,8 +101,8 @@ const ReportsPage = () => {
       borderRadius: '0.5rem',
       boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
       cursor: 'pointer',
-      flex: '1 1 30%',
-      padding: '1.25rem',
+      flex: '1 1 25%',
+      padding: '1rem',
       textAlign: 'center',
       transition: 'transform 0.2s, box-shadow 0.2s'
     },
@@ -107,14 +113,14 @@ const ReportsPage = () => {
     kpiContainer: {
       display: 'flex',
       flexWrap: 'wrap',
-      gap: '1.25rem',
-      marginBottom: '2.5rem'
+      gap: '1rem',
+      marginBottom: '1.25rem'
     },
     listContainer: {
       background: '#fff',
       borderRadius: '0.5rem',
       boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
-      padding: '1.25rem'
+      padding: '1rem'
     },
     listItem: {
       borderBottom: '1px solid #eee',
@@ -129,6 +135,14 @@ const ReportsPage = () => {
       fontSize: '1.25rem',
       fontWeight: 'bold',
       marginBottom: '0.625rem'
+    },
+    buttonsContainer: {
+      textAlign: 'center',
+      display: 'flex',
+      justifyContent: 'center',
+      gap: '1rem',
+      flexWrap: 'wrap',
+      marginTop: '2rem'
     }
   };
   
@@ -161,7 +175,7 @@ const ReportsPage = () => {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#01579b" />
+              <Line type="monotone" dataKey="value" stroke="rgb(1, 87, 155)" />
             </LineChart>
           </ResponsiveContainer>
           <p style={styles.description}>
@@ -171,68 +185,115 @@ const ReportsPage = () => {
       </div>
 
       {/* Sección de Distribución y Top 5 en línea */}
-<div style={{ ...styles.section, display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-  {/* Gráfico de Pie */}
-  <div style={{ ...styles.chartBox, flex: 1, minWidth: 300 }}>
-    <h3 style={styles.title}>Distribución de Atrasos Justificados y No Justificados</h3>
-    <ResponsiveContainer width="100%" height={300}>
-      <PieChart>
-        <Pie
-          data={justifiedVsNot}
-          dataKey="value"
-          nameKey="name"
-          innerRadius={50}
-          outerRadius={80}
-          label
-        >
-          {justifiedVsNot.map((_, i) => (
-            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip />
-      </PieChart>
-    </ResponsiveContainer>
-    <p style={styles.description}>
-      Este gráfico muestra la proporción de atrasos que fueron justificados frente a los que no lo fueron.
-    </p>
-  </div>
+      <div style={{ ...styles.section, display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+        {/* Gráfico de Pie */}
+        <div style={{ ...styles.chartBox, flex: 1, minWidth: '18.75rem' }}>
+          <h3 style={styles.title}>Distribución de Atrasos Justificados y No Justificados</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={justifiedVsNot}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={50}
+                outerRadius={80}
+                label
+              >
+                {justifiedVsNot.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <p style={styles.description}>
+            Este gráfico muestra la proporción de atrasos que fueron justificados frente a los que no lo fueron.
+          </p>
+        </div>
 
-  {/* Lista de Top 5 */}
-  <div style={{ ...styles.listContainer, flex: 1, minWidth: 300 }}>
-    <h3 style={styles.title}>Top 5 Estudiantes con Más Atrasos</h3>
-    {topUsers.length > 0 ? (
-      topUsers.map((user, idx) => {
-        const color = user.value > 5 ? '#f44336' : user.value > 2 ? '#ff9800' : '#4caf50';
-        return (
-          <div key={idx} style={{ ...styles.listItem }}>
-            <span>{idx + 1}. {user.name}</span>
-            <span style={{ color }}>{user.value} atrasos</span>
-          </div>
-        );
-      })
-    ) : (
-      <p>No hay registros suficientes.</p>
-    )}
-  </div>
-</div>
-
+        {/* Lista de Top 5 */}
+        <div style={{ ...styles.listContainer, flex: 1, minWidth: '18.75rem' }}>
+          <h3 style={styles.title}>Top 5 Estudiantes con Más Atrasos</h3>
+          {topUsers.length > 0 ? (
+            topUsers.map((user, idx) => {
+              const color = user.value > 5 ? '#f44336' : user.value > 2 ? '#ff9800' : '#4caf50';
+              return (
+                <div key={idx} style={{ ...styles.listItem }}>
+                  <span>{idx + 1}. {user.name}</span>
+                  <span style={{ color }}>{user.value} atrasos</span>
+                </div>
+              );
+            })
+          ) : (
+            <p>No hay registros suficientes.</p>
+          )}
+        </div>
+      </div>
 
       {/* Botones Reportes */}
-      <div style={{ textAlign: 'center' }}>
-        <button style={styles.button} onClick={() => setShowDailyModal(true)}>
+      <div style={styles.buttonsContainer}>
+        <button 
+          style={styles.button} 
+          onClick={() => setShowDailyModal(true)}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'rgb(1, 67, 135)';
+            e.target.style.transform = 'translateY(-0.0625rem)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'rgb(1, 87, 155)';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
           Ver Reporte Diario
         </button>
-        <button style={styles.button} onClick={() => setShowWeeklyModal(true)}>
+        <button 
+          style={styles.button} 
+          onClick={() => setShowWeeklyModal(true)}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = 'rgb(1, 67, 135)';
+            e.target.style.transform = 'translateY(-0.0625rem)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'rgb(1, 87, 155)';
+            e.target.style.transform = 'translateY(0)';
+          }}
+        >
           Ver Reporte Semanal
         </button>
       </div>
 
       {/* Modals */}
-      <Modal isOpen={showDailyModal} onRequestClose={() => setShowDailyModal(false)} style={{ content: { top: '10%', maxWidth: '700px', margin: 'auto' } }}>
+      <Modal 
+        isOpen={showDailyModal} 
+        onRequestClose={() => setShowDailyModal(false)} 
+        style={{ 
+          content: { 
+            top: '10%', 
+            maxWidth: '43.75rem', 
+            margin: 'auto',
+            borderRadius: '0.5rem',
+            border: 'none',
+            boxShadow: '0 0.25rem 1rem rgba(0,0,0,0.15)'
+          } 
+        }}
+      >
         <AttendanceReport />
       </Modal>
 
-      <Modal isOpen={showWeeklyModal} onRequestClose={() => setShowWeeklyModal(false)} style={{ content: { top: '10%', maxWidth: '700px', margin: 'auto' } }}>
+      <Modal 
+        isOpen={showWeeklyModal} 
+        onRequestClose={() => setShowWeeklyModal(false)} 
+        style={{ 
+          content: { 
+            top: '10%', 
+            maxWidth: '43.75rem', 
+            margin: 'auto',
+            borderRadius: '0.5rem',
+            border: 'none',
+            boxShadow: '0 0.25rem 1rem rgba(0,0,0,0.15)'
+          } 
+        }}
+      >
         <AttendanceReportCustomRange />
       </Modal>
     </div>

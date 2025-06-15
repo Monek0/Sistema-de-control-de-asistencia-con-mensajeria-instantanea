@@ -51,148 +51,161 @@ const RegisterPage = () => {
 
     return (
         <>
-            {}
-            <div style={styles.whatsappContainer}>
-                <button
-                    onClick={() => setShowWhatsappModal(true)}
-                    style={styles.whatsappButton}
-                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#013f73'}
-                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#01579b'}
-                >
-                    Iniciar sesión con WhatsApp
-                </button>
+            {/* Contenedor principal */}
+            <div style={styles.mainContainer}>
+                {/* Botón de WhatsApp en esquina superior izquierda */}
+                <div style={styles.whatsappContainer}>
+                    <button
+                        onClick={() => setShowWhatsappModal(true)}
+                        style={styles.whatsappButton}
+                        onMouseEnter={e => e.currentTarget.style.backgroundColor = '#013f73'}
+                        onMouseLeave={e => e.currentTarget.style.backgroundColor = '#01579b'}
+                    >
+                        Iniciar sesión con WhatsApp
+                    </button>
+                </div>
+
+                {/* Contenedor del formulario centrado */}
+                <div style={styles.container}>
+                    <div style={styles.card}>
+                        <h2 style={styles.header}>Registro</h2>
+
+                        {error && <p style={styles.error}>{error}</p>}
+                        {mensajeExito && <p style={styles.success}>{mensajeExito}</p>}
+
+                        <form onSubmit={handleSubmit}>
+                            <div style={styles.formGroup}>
+                                <label>Nombre de Usuario</label>
+                                <input
+                                    type="text"
+                                    value={nombreUsuario}
+                                    onChange={(e) => setNombreUsuario(e.target.value)}
+                                    style={styles.input}
+                                />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label>RUT</label>
+                                <input
+                                    type="text"
+                                    value={rutUsername}
+                                    onChange={(e) => setRutUsername(e.target.value)}
+                                    style={styles.input}
+                                />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label>Rol (Código numérico)</label>
+                                <input
+                                    type="number"
+                                    value={codRol}
+                                    onChange={(e) => setCodRol(e.target.value)}
+                                    style={styles.input}
+                                />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label>Contraseña</label>
+                                <input
+                                    type="password"
+                                    value={contrasena}
+                                    onChange={(e) => setContrasena(e.target.value)}
+                                    style={styles.input}
+                                />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label>Confirmar Contraseña</label>
+                                <input
+                                    type="password"
+                                    value={confirmarContrasena}
+                                    onChange={(e) => setConfirmarContrasena(e.target.value)}
+                                    style={styles.input}
+                                />
+                            </div>
+                            <button type="submit" style={styles.button}>Registrar</button>
+                        </form>
+                    </div>
+                </div>
             </div>
 
             <WhatsappLoginModal
                 isOpen={showWhatsappModal}
                 onRequestClose={() => setShowWhatsappModal(false)}
             />
-            
-                
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <h2 style={styles.header}>Registro</h2>
-
-                {error && <p style={styles.error}>{error}</p>}
-                {mensajeExito && <p style={styles.success}>{mensajeExito}</p>}
-
-
-                <form onSubmit={handleSubmit}>
-                    <div style={styles.formGroup}>
-                        <label>Nombre de Usuario</label>
-                        <input
-                            type="text"
-                            value={nombreUsuario}
-                            onChange={(e) => setNombreUsuario(e.target.value)}
-                            style={styles.input}
-                        />
-                    </div>
-                    <div style={styles.formGroup}>
-                        <label>RUT</label>
-                        <input
-                            type="text"
-                            value={rutUsername}
-                            onChange={(e) => setRutUsername(e.target.value)}
-                            style={styles.input}
-                        />
-                    </div>
-                    <div style={styles.formGroup}>
-                        <label>Rol (Código numérico)</label>
-                        <input
-                            type="number"
-                            value={codRol}
-                            onChange={(e) => setCodRol(e.target.value)}
-                            style={styles.input}
-                        />
-                    </div>
-                    <div style={styles.formGroup}>
-                        <label>Contraseña</label>
-                        <input
-                            type="password"
-                            value={contrasena}
-                            onChange={(e) => setContrasena(e.target.value)}
-                            style={styles.input}
-                        />
-                    </div>
-                    <div style={styles.formGroup}>
-                        <label>Confirmar Contraseña</label>
-                        <input
-                            type="password"
-                            value={confirmarContrasena}
-                            onChange={(e) => setConfirmarContrasena(e.target.value)}
-                            style={styles.input}
-                        />
-                    </div>
-                    <button type="submit" style={styles.button}>Registrar</button>
-                </form>
-            </div>
-        </div>
         </>
     );
 };
 
 // Estilos
 const styles = {
+    mainContainer: {
+        position: 'relative',
+        minHeight: '100vh',
+        backgroundColor: '#f7f7f7',
+    },
+    whatsappContainer: {
+        position: 'absolute',
+        top: '1.25rem',
+        left: '1.25rem',
+        zIndex: 1000,
+    },
     container: {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        height: '70vh',
+        minHeight: '100vh',
         backgroundColor: '#f7f7f7',
+        padding: '1.25rem',
     },
     card: {
-        width: '400px',
-        padding: '40px',
-        borderRadius: '20px',
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+        width: '25rem',
+        padding: '2.5rem',
+        borderRadius: '1.25rem',
+        boxShadow: '0 0.25rem 0.50rem rgba(0, 0, 0, 0.1)',
         backgroundColor: '#fff',
     },
     header: {
         textAlign: 'center',
-        marginBottom: '20px',
+        marginBottom: '1.25rem',
     },
     formGroup: {
-        marginBottom: '15px',
+        marginBottom: '0.9375rem ',
     },
     input: {
         width: '95%',
-        padding: '10px',
-        marginTop: '5px',
-        borderRadius: '4px',
+        padding: '0.625rem',
+        marginTop: '0.3125rem',
+        borderRadius: '0.25rem',
         border: '1px solid #ccc',
     },
     button: {
         width: '100%',
-        padding: '10px',
         backgroundColor: '#FF8C00',
         color: '#fff',
         border: 'none',
-        borderRadius: '4px',
+        borderRadius: '0.25rem',
         cursor: 'pointer',
-        fontSize: '16px',
+        fontSize: '1rem',
+        padding: '1rem',
     },
     error: {
         color: 'red',
         textAlign: 'center',
-        marginBottom: '15px',
+        marginBottom: '0.9375rem ',
     },
     success: {
         color: 'green',
         textAlign: 'center',
-        marginBottom: '15px',
+        marginBottom: '0.9375rem ',
     },
+
     whatsappButton: {
-        padding: '10px 15px',
+        padding: '0.625rem 0.9375rem',
         backgroundColor: '#01579b',
         color: '#fff',
         border: 'none',
-        borderRadius: '5px',
+        borderRadius: '0.3125rem',
         cursor: 'pointer',
         transition: 'background-color 0.3s ease, transform 0.3s',
-        marginBottom: '20px',
+        fontSize: '0.875rem',
     },
-    
-    
 };
 
 export default RegisterPage;
