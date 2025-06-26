@@ -74,53 +74,59 @@ const RegisterPage = () => {
                         {mensajeExito && <p style={styles.success}>{mensajeExito}</p>}
 
                         <form onSubmit={handleSubmit}>
-                            <div style={styles.formGroup}>
-                                <label>Nombre de Usuario</label>
-                                <input
-                                    type="text"
-                                    value={nombreUsuario}
-                                    onChange={(e) => setNombreUsuario(e.target.value)}
-                                    style={styles.input}
-                                />
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>RUT</label>
-                                <input
-                                    type="text"
-                                    value={rutUsername}
-                                    onChange={(e) => setRutUsername(e.target.value)}
-                                    style={styles.input}
-                                />
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>Rol (Código numérico)</label>
-                                <input
-                                    type="number"
-                                    value={codRol}
-                                    onChange={(e) => setCodRol(e.target.value)}
-                                    style={styles.input}
-                                />
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>Contraseña</label>
-                                <input
-                                    type="password"
-                                    value={contrasena}
-                                    onChange={(e) => setContrasena(e.target.value)}
-                                    style={styles.input}
-                                />
-                            </div>
-                            <div style={styles.formGroup}>
-                                <label>Confirmar Contraseña</label>
-                                <input
-                                    type="password"
-                                    value={confirmarContrasena}
-                                    onChange={(e) => setConfirmarContrasena(e.target.value)}
-                                    style={styles.input}
-                                />
-                            </div>
-                            <button type="submit" style={styles.button}>Registrar</button>
-                        </form>
+  <div style={styles.formGroup}>
+    <label htmlFor="nombreUsuario">Nombre de Usuario</label>
+    <input
+      id="nombreUsuario"
+      type="text"
+      value={nombreUsuario}
+      onChange={(e) => setNombreUsuario(e.target.value)}
+      style={styles.input}
+    />
+  </div>
+  <div style={styles.formGroup}>
+    <label htmlFor="rutUsername">RUT</label>
+    <input
+      id="rutUsername"
+      type="text"
+      value={rutUsername}
+      onChange={(e) => setRutUsername(e.target.value)}
+      style={styles.input}
+    />
+  </div>
+  <div style={styles.formGroup}>
+    <label htmlFor="codRol">Rol (Código numérico)</label>
+    <input
+      id="codRol"
+      type="number"
+      value={codRol}
+      onChange={(e) => setCodRol(e.target.value)}
+      style={styles.input}
+    />
+  </div>
+  <div style={styles.formGroup}>
+    <label htmlFor="contrasena">Contraseña</label>
+    <input
+      id="contrasena"
+      type="password"
+      value={contrasena}
+      onChange={(e) => setContrasena(e.target.value)}
+      style={styles.input}
+    />
+  </div>
+  <div style={styles.formGroup}>
+    <label htmlFor="confirmarContrasena">Confirmar Contraseña</label>
+    <input
+      id="confirmarContrasena"
+      type="password"
+      value={confirmarContrasena}
+      onChange={(e) => setConfirmarContrasena(e.target.value)}
+      style={styles.input}
+    />
+  </div>
+  <button type="submit" style={styles.button}>Registrar</button>
+</form>
+
                     </div>
                 </div>
             </div>

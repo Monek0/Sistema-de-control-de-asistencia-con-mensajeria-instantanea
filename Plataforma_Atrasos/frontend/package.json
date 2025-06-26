@@ -3,8 +3,6 @@
   "version": "0.1.16",
   "private": true,
   "dependencies": {
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
@@ -38,6 +36,15 @@
       "react-app/jest"
     ]
   },
+  "jest": {
+    "moduleNameMapper": {
+      "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+      "\\.(png|jpg|jpeg|gif|svg)$": "<rootDir>/__mocks__/fileMock.js"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(axios|lucide-react|react-icons)/)"
+    ]
+  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -52,8 +59,16 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-react": "^7.27.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "babel-jest": "^30.0.2",
+    "cypress": "^14.5.0",
     "dotenv": "^16.4.7",
     "http-proxy-middleware": "^3.0.3",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^27.5.1",
     "webpack": "^5.90.3"
   },
   "engines": {
