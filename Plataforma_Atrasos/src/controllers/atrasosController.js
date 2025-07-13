@@ -103,7 +103,7 @@ const generateBaucher = (data) => {
 exports.getAllAtrasos = async (req, res) => {
     const query = `
         SELECT a.rut_alumno, a.fecha_atrasos, a.justificativo, a.pdf_path,
-               CONCAT(b.nombre_alumno, ' ', b.segundo_nombre_alumno, ' ', b.apellido_paterno_alumno, ' ', b.apellido_materno_alumno) AS nombre_completo, 
+               CONCAT(b.nombre_alumno) AS nombre_completo, 
                c.nombre_curso,
                CASE
                     WHEN a.justificativo = false THEN 'Sin justificativo'
@@ -120,7 +120,7 @@ exports.getAllAtrasos = async (req, res) => {
         JOIN alumnos b ON a.rut_alumno = b.rut_alumno
         JOIN cursos c ON b.cod_curso = c.cod_curso
         GROUP BY a.cod_atrasos, a.rut_alumno, a.fecha_atrasos, a.justificativo, a.pdf_path, 
-                 b.nombre_alumno, b.segundo_nombre_alumno, b.apellido_paterno_alumno, b.apellido_materno_alumno,
+                 b.nombre_alumno,
                  c.nombre_curso, b.justificativo_residencia, b.justificativo_medico, b.justificativo_deportivo
     `;
     let client;

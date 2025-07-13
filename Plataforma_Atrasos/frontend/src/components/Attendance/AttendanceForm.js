@@ -103,18 +103,11 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
   const formatearRut = (valor) => {
     valor = valor.replace(/[^0-9kK]/g, '');
-    if (valor.length <= 1) return valor;
-
+    if (valor.length <= 1) 
+      return valor;
     const cuerpo = valor.slice(0, -1);
-    let dv = valor.slice(-1).toUpperCase();
-    let cuerpoFormateado = '';
-    for (let i = cuerpo.length - 1, j = 1; i >= 0; i--, j++) {
-      cuerpoFormateado = cuerpo[i] + cuerpoFormateado;
-      if (j % 3 === 0 && i !== 0) {
-        cuerpoFormateado = '.' + cuerpoFormateado;
-      }
-    }
-    return `${cuerpoFormateado}-${dv}`;
+    const dv = valor.slice(-1).toUpperCase();
+    return `${cuerpo}-${dv}`;
   };
 
   const styles = {

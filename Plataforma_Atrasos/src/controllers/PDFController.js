@@ -21,7 +21,7 @@ function formatDateInChile(date) {
 }
 
 exports.fillForm = async (rutAlumno, fechaAtraso) => {
-  const query = 'SELECT rut_alumno, nombre_alumno, segundo_nombre_alumno, apellido_paterno_alumno, apellido_materno_alumno FROM alumnos WHERE rut_alumno = $1';
+  const query = 'SELECT rut_alumno, nombre_alumno FROM alumnos WHERE rut_alumno = $1';
   let client;
 
   try {
