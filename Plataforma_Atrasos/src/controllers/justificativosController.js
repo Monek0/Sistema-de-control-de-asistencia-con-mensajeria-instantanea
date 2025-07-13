@@ -1,13 +1,14 @@
-// justificativosController.js
-const pool = require('../config/db');
+const { getClient } = require('../config/db');
 
 // Verificar justificativo de residencia de un alumno y devolver su nombre
 exports.verificarJustificativos = async (req, res) => {
     const { rut } = req.params;
     const query = 'SELECT nombre_alumno, justificativo_residencia, justificativo_deportivo, justificativo_medico FROM alumnos WHERE rut_alumno = $1';
+    let client;
 
     try {
-        const result = await pool.query(query, [rut]);
+        client = await getClient();
+        const result = await client.query(query, [rut]);
         
         if (result.rows.length > 0) {
             return res.status(200).json({
@@ -22,5 +23,7 @@ exports.verificarJustificativos = async (req, res) => {
     } catch (error) {
         console.error('Error al consultar justificativos:', error);
         return res.status(500).json({ error: 'Error al consultar justificativos' });
+    } finally {
+        if (client) client.release();
     }
 };

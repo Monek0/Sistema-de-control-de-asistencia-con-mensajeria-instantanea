@@ -1,7 +1,7 @@
 const { format } = require('date-fns');
 const PDFDocumentLib = require('pdf-lib');
 const PDFDocument = PDFDocumentLib.PDFDocument;
-const pool = require('../config/db');
+const { getClient } = require('../config/db');
 const fs = require('fs');
 
 // ✅ Leer los archivos una sola vez al inicio del módulo
@@ -22,9 +22,12 @@ function formatDateInChile(date) {
 
 exports.fillForm = async (rutAlumno, fechaAtraso) => {
   const query = 'SELECT rut_alumno, nombre_alumno, segundo_nombre_alumno, apellido_paterno_alumno, apellido_materno_alumno FROM alumnos WHERE rut_alumno = $1';
+  let client;
 
   try {
-    const result = await pool.query(query, [rutAlumno]);
+    client = await getClient();
+    const result = await client.query(query, [rutAlumno]);
+    
     if (result.rows.length === 0) {
       throw new Error('No se encontraron datos del alumno');
     }
@@ -46,10 +49,7 @@ exports.fillForm = async (rutAlumno, fechaAtraso) => {
     fechaField.setText(fechaFormateada);
 
     const nombreCompleto = [
-      datosAlumno.nombre_alumno,
-      datosAlumno.segundo_nombre_alumno,
-      datosAlumno.apellido_paterno_alumno,
-      datosAlumno.apellido_materno_alumno
+      datosAlumno.nombre_alumno
     ].join(' ');
 
     cuerpoField.setText(`Estimado Apoderado(a),\n\nLe informamos que su pupilo(a) ${nombreCompleto}, RUT ${datosAlumno.rut_alumno}, ha registrado un atraso con fecha ${fechaFormateada}.`);
@@ -88,5 +88,7 @@ exports.fillForm = async (rutAlumno, fechaAtraso) => {
   } catch (error) {
     console.error('Error al generar PDF:', error);
     throw new Error('Error al generar PDF. No se pudieron consultar los datos del alumno');
+  } finally {
+    if (client) client.release();
   }
 };

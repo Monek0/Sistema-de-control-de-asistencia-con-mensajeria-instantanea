@@ -1,6 +1,5 @@
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
-
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -14,9 +13,10 @@ const pool = new Pool({
     ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
-pool.query('SELECT 1')
-    .then(() => console.log(`Conexión verificada a PostgreSQL (${isProduction ? 'Producción' : 'Local'})`))
-    .catch(err => console.error('Error conectando a la base de datos:', err));
+const getClient = async () => {
+    const client = await pool.connect();
+    await client.query(`SET search_path TO ${process.env.DB_SCHEMA || 'public'}`);
+    return client;
+};
 
-
-module.exports = pool;
+module.exports = { getClient };

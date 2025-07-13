@@ -29,6 +29,8 @@ CREATE TABLE public.alumnos (
     apellido_paterno_alumno VARCHAR(255),
     apellido_materno_alumno VARCHAR(255),
     n_celular_apoderado VARCHAR(255),
+    correo_alumno VARCHAR(255),
+    apoderado VARCHAR(255),
     huella_alumno BYTEA,
     justificativo_residencia BOOLEAN DEFAULT false,
     justificativo_deportivo BOOLEAN DEFAULT false,
