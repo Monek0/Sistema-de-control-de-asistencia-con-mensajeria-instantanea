@@ -10,12 +10,14 @@ const authRoutes = require('./routes/authRoutes');
 const atrasosRoutes = require('./routes/atrasosRoutes');
 const justificativoRoutes = require('./routes/justificativoRoutes');
 const metricsRoutes = require('./routes/metricsRoutes');
+const alumnoRoutes = require('./routes/alumnoRoutes');
+const cursosRoutes = require('./routes/cursosRoutes');
 
 const app = express();
 
 // Configuración de CORS
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.FRONTEND_URL || 'http://localhost:3000', 'http://localhost:3001',
   process.env.FRONTEND_URL_PROD
 ].filter(Boolean);
 console.log('CORS allowed origins:', allowedOrigins);
@@ -47,6 +49,8 @@ app.use('/auth', authRoutes);
 app.use('/api', atrasosRoutes);
 app.use('/api', justificativoRoutes);
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/alumnos', alumnoRoutes);
+app.use('/api/cursos', cursosRoutes);
 
 // Socket.IO
 const server = http.createServer(app);

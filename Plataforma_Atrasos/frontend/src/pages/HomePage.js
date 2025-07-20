@@ -10,10 +10,12 @@ import controlIcon from '../assets/icons/control.png';
 import reportIcon from '../assets/icons/report.png';
 import messageIcon from '../assets/icons/message.png';
 import agregarIcon from '../assets/icons/agregar-usuario.png';
+import studentIcon from '../assets/icons/estudiante.png';
 import AttendancePage from './AttendancePage';
 import ReportsPage from './ReportsPage';
 import AtrasosPage from './AtrasosPage';
 import RegisterPage from './RegisterPage';
+import EstudiantesPage from './EstudiantesPage';
 import logo from '../assets/images/logo.png';
 
 const API_BASE_URL = window.location.hostname === 'localhost'
@@ -294,6 +296,9 @@ const HomePage = () => {
           <MenuItem icon={controlIcon} text="Control de Atrasos" action="attendance" />
           <MenuItem icon={reportIcon} text="Reportes" action="reports" />
           <MenuItem icon={messageIcon} text="Mensajería" action="atrasos" />
+          {userRole && (userRole === 1) && (
+            <MenuItem icon={studentIcon} text="Alumnos" action="estudiantes" />
+          )}
           {userRole && (userRole === 1 || userRole === 3) && (
             <MenuItem icon={agregarIcon} text="Registrar Usuario" action="registro" />
           )}
@@ -329,6 +334,7 @@ const HomePage = () => {
           {activeMenu === 'attendance' && <AttendancePage />}
           {activeMenu === 'reports' && <ReportsPage />}
           {activeMenu === 'atrasos' && <AtrasosPage />}
+          {activeMenu === 'estudiantes' && <EstudiantesPage />}
           {activeMenu === 'registro' && <RegisterPage />}
         </motion.div>
       </div>
