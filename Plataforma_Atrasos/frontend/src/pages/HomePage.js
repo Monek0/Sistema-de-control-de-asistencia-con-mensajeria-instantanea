@@ -16,7 +16,6 @@ import ReportsPage from './ReportsPage';
 import AtrasosPage from './AtrasosPage';
 import RegisterPage from './RegisterPage';
 import EstudiantesPage from './EstudiantesPage';
-import logo from '../assets/images/logo.png';
 
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
@@ -272,7 +271,7 @@ const HomePage = () => {
     const isActive = activeMenu === action;
     return (
       <motion.div
-        style={{ ...styles.menuItem, backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'transparent' }}
+        style={{ ...styles.menuItem, backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0)' }}
         whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.3)' }}
         onClick={() => handleMenuClick(action)}
       >

@@ -260,7 +260,7 @@ const AtrasosPage = () => {
                                 const justificado = atraso.justificativo ? `Sí (${atraso.tipo_justificativo})` : 'No';
 
                                 return (
-                                    <tr key={atraso.cod_atrasos}>
+                                    <tr key={`${atraso.cod_atrasos}-${atraso.rut_alumno}-${atraso.fecha_atrasos}`}>
                                         <td style={styles.cell}>{atraso.rut_alumno}</td>
                                         <td style={styles.cell}>{fechaFormateada}</td>
                                         <td style={styles.cell}>{horaFormateada}</td>

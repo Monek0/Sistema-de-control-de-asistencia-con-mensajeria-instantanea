@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Typography, Button, TextField, Dialog, DialogTitle,
   DialogContent, DialogActions, Select, MenuItem, InputLabel,
-  FormControl, CircularProgress, Alert, Snackbar, Card, CardContent, 
+  FormControl, CircularProgress, Alert, Card, CardContent,
   CardHeader
 } from '@mui/material';
-import MuiAlert from '@mui/material/Alert';
-import SearchIcon from '@mui/icons-material/Search';
 import { jwtDecode } from 'jwt-decode';
 import { getEstudiantes, createEstudiante, updateEstudiante } from '../services/estudiantesService';
 import { getCursos } from '../services/cursosService';
@@ -20,10 +18,6 @@ const initialForm = {
   correo: ''
 };
 
-const AlertSnackbar = React.forwardRef(function AlertSnackbar(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
-
 export default function EstudiantesPage() {
   const [estudiantes, setEstudiantes] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -33,23 +27,21 @@ export default function EstudiantesPage() {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [alert, setAlert] = useState({ show: false, severity: 'success', message: '' });
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [userRole, setUserRole] = useState(null);
   const [formErrors, setFormErrors] = useState({});
-
+  const [userRole, setUserRole] = useState(null);
   const [searchRut, setSearchRut] = useState('');
   const [searchNombre, setSearchNombre] = useState('');
   const [searchCurso, setSearchCurso] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) return;
-    try {
-      const decoded = jwtDecode(token);
-      setUserRole(decoded.role || decoded.cod_rol);
-    } catch {
-      setUserRole(null);
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        setUserRole(decoded.role || decoded.cod_rol);
+      } catch {
+        setUserRole(null);
+      }
     }
   }, []);
 
@@ -60,11 +52,14 @@ export default function EstudiantesPage() {
         setFiltered(estRes);
         setCursos(cursosRes);
       })
-      .catch(() => {
-        showAlert('error', 'Error al obtener datos.');
-      })
+      .catch(() => console.error('Error al obtener datos.'))
       .finally(() => setLoading(false));
   }, []);
+
+  const getCursoNombre = useCallback((cod) => {
+    const curso = cursos.find(c => c.cod_curso === cod);
+    return curso ? curso.nombre_curso : 'No asignado';
+  }, [cursos]);
 
   useEffect(() => {
     const filtro = estudiantes
@@ -75,21 +70,7 @@ export default function EstudiantesPage() {
         (getCursoNombre(e.cod_curso) || '').toLowerCase().includes(searchCurso.toLowerCase())
       );
     setFiltered(filtro);
-  }, [searchRut, searchNombre, searchCurso, estudiantes]);
-
-  const showAlert = (severity, message) => {
-    setAlert({ show: true, severity, message });
-    setSnackbarOpen(true);
-  };
-
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
-  };
-
-  const getCursoNombre = (cod) => {
-    const curso = cursos.find(c => c.cod_curso === cod);
-    return curso ? curso.nombre_curso : 'No asignado';
-  };
+  }, [searchRut, searchNombre, searchCurso, estudiantes, getCursoNombre]);
 
   const handleShowModal = (index = null) => {
     setEditingIndex(index);
@@ -154,16 +135,13 @@ export default function EstudiantesPage() {
           apoderado: form.apoderado
         };
         setEstudiantes(updated);
-        showAlert('success', 'Datos actualizados correctamente.');
       } else {
         const res = await createEstudiante(form);
-        const updated = [...estudiantes, res];
-        setEstudiantes(updated);
-        showAlert('success', 'Estudiante agregado con éxito.');
+        setEstudiantes([...estudiantes, res]);
       }
       handleCloseModal();
     } catch {
-      showAlert('error', 'Error al guardar datos.');
+      console.error('Error al guardar datos.');
     } finally {
       setSaving(false);
     }
@@ -174,7 +152,6 @@ export default function EstudiantesPage() {
   }
 
   return (
-    
     <Box sx={{ maxWidth: '1200px', mx: 'auto', mt: 4, p: 2 }}>
       <Card sx={{ p: 2, boxShadow: 4, borderRadius: 3 }}>
         <CardHeader
@@ -182,7 +159,6 @@ export default function EstudiantesPage() {
           titleTypographyProps={{ variant: 'h5', fontWeight: 'bold' }}
           sx={{ textAlign: 'center', pb: 0 }}
         />
-
         <CardContent>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
             <TextField
@@ -246,12 +222,10 @@ export default function EstudiantesPage() {
         </CardContent>
       </Card>
 
-
       <Dialog open={showModal} onClose={handleCloseModal} fullWidth maxWidth="sm">
         <DialogTitle>
           {editingIndex !== null ? '✏️ Editar Estudiante' : '➕ Agregar Estudiante'}
         </DialogTitle>
-
         <form onSubmit={handleSubmit}>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
             <TextField
@@ -295,11 +269,10 @@ export default function EstudiantesPage() {
               helperText={formErrors.telefono}
             />
             <TextField
-              fullWidth
               label="Correo"
+              name="correo"
               value={form.correo}
-              onChange={(e) => setForm({ ...form, correo: e.target.value })}
-              margin="normal"
+              onChange={handleChange}
               type="email"
             />
             <TextField
@@ -311,7 +284,6 @@ export default function EstudiantesPage() {
               helperText={formErrors.apoderado}
             />
           </DialogContent>
-
           <DialogActions sx={{ pr: 3, pb: 2 }}>
             <Button onClick={handleCloseModal}>Cancelar</Button>
             <Button type="submit" variant="contained" disabled={saving}>
