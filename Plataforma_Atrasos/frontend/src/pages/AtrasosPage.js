@@ -12,6 +12,7 @@ const AtrasosPage = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updatingAtraso, setUpdatingAtraso] = useState(null); // Para mostrar loading en botones individuales
+  const [deletingAtraso, setDeletingAtraso] = useState(null); // Para mostrar loading en botón eliminar
 
   const [searchRut, setSearchRut] = useState('');
   const [searchName, setSearchName] = useState('');
@@ -59,6 +60,38 @@ const AtrasosPage = () => {
       setError('Error al actualizar la justificación');
     } finally {
       setUpdatingAtraso(null);
+    }
+  };
+
+  // Función para eliminar un atraso
+  const deleteAtraso = async (codAtrasos, nombreAlumno) => {
+    const confirmDelete = window.confirm(
+      `¿Estás seguro de que quieres eliminar el atraso del estudiante "${nombreAlumno}"? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmDelete) return;
+
+    setDeletingAtraso(codAtrasos);
+    try {
+      await axios.delete(`${API_BASE_URL}/api/atrasos/${codAtrasos}`);
+
+      // Eliminar el atraso del estado local
+      setAtrasos(prevAtrasos =>
+        prevAtrasos.filter(atraso => atraso.cod_atrasos !== codAtrasos)
+      );
+
+      // Si la página actual se queda sin elementos, ir a la página anterior
+      const remainingItems = filteredAtrasos.length - 1;
+      const maxPage = Math.ceil(remainingItems / rowsPerPage);
+      if (page > maxPage && maxPage > 0) {
+        setPage(maxPage);
+      }
+
+    } catch (error) {
+      console.error('Error al eliminar el atraso:', error);
+      setError('Error al eliminar el atraso');
+    } finally {
+      setDeletingAtraso(null);
     }
   };
 
@@ -204,6 +237,15 @@ const AtrasosPage = () => {
       borderBottom: '1px solid #ddd',
       textAlign: 'center',
     },
+    actionCell: {
+      padding: '0.75rem',
+      borderBottom: '1px solid #ddd',
+      textAlign: 'center',
+      display: 'flex',
+      gap: '0.5rem',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     justificarButton: {
       padding: '0.4rem 0.8rem',
       border: 'none',
@@ -222,6 +264,22 @@ const AtrasosPage = () => {
       color: 'white',
     },
     justificarButtonLoading: {
+      backgroundColor: '#ccc',
+      color: '#666',
+      cursor: 'not-allowed',
+    },
+    deleteButton: {
+      padding: '0.4rem 0.8rem',
+      border: 'none',
+      borderRadius: '0.3rem',
+      cursor: 'pointer',
+      fontWeight: 'bold',
+      fontSize: '0.85rem',
+      minWidth: '80px',
+      backgroundColor: '#d32f2f',
+      color: 'white',
+    },
+    deleteButtonLoading: {
       backgroundColor: '#ccc',
       color: '#666',
       cursor: 'not-allowed',
@@ -336,7 +394,7 @@ const AtrasosPage = () => {
                   <th style={styles.headerCell}>Nombre Completo</th>
                   <th style={styles.headerCell}>Curso</th>
                   <th style={styles.headerCell}>PDF</th>
-                  <th style={styles.headerCell}>Acción</th>
+                  <th style={styles.headerCell}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -346,6 +404,7 @@ const AtrasosPage = () => {
                   const horaStr = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                   const justificado = atraso.justificado;
                   const isUpdating = updatingAtraso === atraso.cod_atrasos;
+                  const isDeleting = deletingAtraso === atraso.cod_atrasos;
 
                   return (
                     <tr key={`${atraso.cod_atrasos}-${atraso.rut_alumno}-${atraso.fecha_atrasos}`}>
@@ -377,10 +436,10 @@ const AtrasosPage = () => {
                           'No disponible'
                         )}
                       </td>
-                      <td style={styles.cell}>
+                      <td style={styles.actionCell}>
                         <button
                           onClick={() => updateJustificacion(atraso.cod_atrasos, justificado)}
-                          disabled={isUpdating}
+                          disabled={isUpdating || isDeleting}
                           style={{
                             ...styles.justificarButton,
                             ...(isUpdating
@@ -397,6 +456,16 @@ const AtrasosPage = () => {
                             ? '❌ Injustificar'
                             : '✅ Justificar'
                           }
+                        </button>
+                        <button
+                          onClick={() => deleteAtraso(atraso.cod_atrasos, atraso.nombre_completo)}
+                          disabled={isDeleting || isUpdating}
+                          style={{
+                            ...styles.deleteButton,
+                            ...(isDeleting ? styles.deleteButtonLoading : {})
+                          }}
+                        >
+                          {isDeleting ? '⏳' : '🗑️ Eliminar'}
                         </button>
                       </td>
                     </tr>
