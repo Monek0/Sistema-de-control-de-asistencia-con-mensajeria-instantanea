@@ -24,6 +24,13 @@ router.put('/atrasos/:id', atrasosController.updateAtraso);
 // Eliminar un atraso
 router.delete('/atrasos/:id', atrasosController.deleteAtraso);
 
+router.put('/atrasos/:id', async (req, res) => {
+  const { justificado } = req.body;
+  await db.query('UPDATE atrasos SET justificado = ? WHERE cod_atrasos = ?', [justificado, req.params.id]);
+  res.sendStatus(200);
+});
+
+
 // Baucher
 //router.get('/generatePDF/:codAtraso', atrasosController.generatePDFForAtraso);
 

@@ -11,6 +11,7 @@ const AtrasosPage = () => {
   const [atrasos, setAtrasos] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updatingAtraso, setUpdatingAtraso] = useState(null); // Para mostrar loading en botones individuales
 
   const [searchRut, setSearchRut] = useState('');
   const [searchName, setSearchName] = useState('');
@@ -36,6 +37,30 @@ const AtrasosPage = () => {
 
     fetchAtrasos();
   }, [API_BASE_URL]);
+
+  // Función para actualizar el estado de justificación
+  const updateJustificacion = async (codAtrasos, currentStatus) => {
+    setUpdatingAtraso(codAtrasos);
+    try {
+      await axios.put(`${API_BASE_URL}/api/atrasos/${codAtrasos}`, {
+        justificado: !currentStatus
+      });
+
+      // Actualizar el estado local
+      setAtrasos(prevAtrasos =>
+        prevAtrasos.map(atraso =>
+          atraso.cod_atrasos === codAtrasos
+            ? { ...atraso, justificado: !currentStatus }
+            : atraso
+        )
+      );
+    } catch (error) {
+      console.error('Error al actualizar justificación:', error);
+      setError('Error al actualizar la justificación');
+    } finally {
+      setUpdatingAtraso(null);
+    }
+  };
 
   // Filtrado de atrasos según los filtros
   const filteredAtrasos = useMemo(() => {
@@ -86,7 +111,7 @@ const AtrasosPage = () => {
     page.drawText('RUT Alumno', { x: 30, y: yPosition, size: headerFontSize });
     page.drawText('Fecha Atraso', { x: 100, y: yPosition, size: headerFontSize });
     page.drawText('Hora Atraso', { x: 170, y: yPosition, size: headerFontSize });
-    page.drawText('Justificativo', { x: 240, y: yPosition, size: headerFontSize });
+    page.drawText('Justificado', { x: 240, y: yPosition, size: headerFontSize });
     page.drawText('Nombre Completo', { x: 300, y: yPosition, size: headerFontSize });
     page.drawText('Curso', { x: 520, y: yPosition, size: headerFontSize });
 
@@ -102,7 +127,7 @@ const AtrasosPage = () => {
       const fecha = new Date(atraso.fecha_atrasos);
       const fechaFormateada = fecha.toLocaleDateString();
       const horaFormateada = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const justificado = atraso.justificativo ? `Sí (${atraso.tipo_justificativo})` : 'No';
+      const justificado = atraso.justificado ? 'Sí' : 'No';
 
       page.drawText(atraso.rut_alumno || '', { x: 30, y: yPosition, size: fontSize });
       page.drawText(fechaFormateada, { x: 100, y: yPosition, size: fontSize });
@@ -178,6 +203,28 @@ const AtrasosPage = () => {
       padding: '0.75rem',
       borderBottom: '1px solid #ddd',
       textAlign: 'center',
+    },
+    justificarButton: {
+      padding: '0.4rem 0.8rem',
+      border: 'none',
+      borderRadius: '0.3rem',
+      cursor: 'pointer',
+      fontWeight: 'bold',
+      fontSize: '0.85rem',
+      minWidth: '80px',
+    },
+    justificarButtonSi: {
+      backgroundColor: '#4caf50',
+      color: 'white',
+    },
+    justificarButtonNo: {
+      backgroundColor: '#f44336',
+      color: 'white',
+    },
+    justificarButtonLoading: {
+      backgroundColor: '#ccc',
+      color: '#666',
+      cursor: 'not-allowed',
     },
     error: {
       color: 'red',
@@ -285,10 +332,11 @@ const AtrasosPage = () => {
                   <th style={styles.headerCell}>RUT</th>
                   <th style={styles.headerCell}>Fecha</th>
                   <th style={styles.headerCell}>Hora</th>
-                  <th style={styles.headerCell}>Justificativo</th>
+                  <th style={styles.headerCell}>Justificado</th>
                   <th style={styles.headerCell}>Nombre Completo</th>
                   <th style={styles.headerCell}>Curso</th>
                   <th style={styles.headerCell}>PDF</th>
+                  <th style={styles.headerCell}>Acción</th>
                 </tr>
               </thead>
               <tbody>
@@ -296,14 +344,22 @@ const AtrasosPage = () => {
                   const fecha = new Date(atraso.fecha_atrasos);
                   const fechaStr = fecha.toLocaleDateString();
                   const horaStr = fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  const justificado = atraso.justificativo ? `Sí (${atraso.tipo_justificativo})` : 'No';
+                  const justificado = atraso.justificado;
+                  const isUpdating = updatingAtraso === atraso.cod_atrasos;
 
                   return (
                     <tr key={`${atraso.cod_atrasos}-${atraso.rut_alumno}-${atraso.fecha_atrasos}`}>
                       <td style={styles.cell}>{atraso.rut_alumno}</td>
                       <td style={styles.cell}>{fechaStr}</td>
                       <td style={styles.cell}>{horaStr}</td>
-                      <td style={styles.cell}>{justificado}</td>
+                      <td style={styles.cell}>
+                        <span style={{
+                          color: justificado ? '#4caf50' : '#f44336',
+                          fontWeight: 'bold'
+                        }}>
+                          {justificado ? 'Sí' : 'No'}
+                        </span>
+                      </td>
                       <td style={{ ...styles.cell, textAlign: 'left' }}>{atraso.nombre_completo}</td>
                       <td style={styles.cell}>{atraso.nombre_curso}</td>
                       <td style={styles.cell}>
@@ -320,6 +376,28 @@ const AtrasosPage = () => {
                         ) : (
                           'No disponible'
                         )}
+                      </td>
+                      <td style={styles.cell}>
+                        <button
+                          onClick={() => updateJustificacion(atraso.cod_atrasos, justificado)}
+                          disabled={isUpdating}
+                          style={{
+                            ...styles.justificarButton,
+                            ...(isUpdating
+                              ? styles.justificarButtonLoading
+                              : justificado
+                              ? styles.justificarButtonNo
+                              : styles.justificarButtonSi
+                            )
+                          }}
+                        >
+                          {isUpdating
+                            ? '⏳'
+                            : justificado
+                            ? '❌ Injustificar'
+                            : '✅ Justificar'
+                          }
+                        </button>
                       </td>
                     </tr>
                   );

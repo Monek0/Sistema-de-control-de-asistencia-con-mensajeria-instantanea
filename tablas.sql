@@ -46,5 +46,6 @@ CREATE TABLE public.atrasos (
     justificativo BOOLEAN,
     pdf_path VARCHAR(255),
     tipo_justificativo VARCHAR(255),
+    justificado BOOLEAN,
     FOREIGN KEY (rut_alumno) REFERENCES public.alumnos(rut_alumno)
 );
