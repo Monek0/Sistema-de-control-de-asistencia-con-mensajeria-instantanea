@@ -45,7 +45,7 @@ exports.fillForm = async (rutAlumno, fechaAtraso) => {
 
     const fechaFormateada = formatDateInChile(fechaAtraso);
 
-    colegioField.setText('INSUCO');
+    colegioField.setText('Instituto Superior De Comercio');
     fechaField.setText(fechaFormateada);
 
     const nombreCompleto = [

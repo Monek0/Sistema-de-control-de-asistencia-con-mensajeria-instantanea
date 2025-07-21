@@ -18,7 +18,7 @@ const sendPDF = whatsappController.sendPDF;
 
 // Función para generar el baucher del atraso
 const generateBaucher = (data) => {
-    const { curso, nombre, rut, fecha, codAtraso } = data;
+    const { curso, nombre, rut, fecha, cantidadAtrasos, codAtraso } = data;
 
     // Crear un documento PDF ajustado al tamaño de una impresora térmica de 80mm (ancho 80mm, altura automática)
     const doc = new PDFDocument({
@@ -73,10 +73,11 @@ const generateBaucher = (data) => {
 
     doc.moveDown(0.3); // Menos espacio hacia abajo
 
-    doc.text(`Código de Atraso: ${codAtraso}`, {
+    doc.text(`Cantidad de Atrasos: ${cantidadAtrasos}`, {
         align: 'left',
-        indent: 20, // Mover hacia la derecha (menos que antes)
+        indent: 20,
     });
+
 
     // Añadir la línea de separación (si deseas)
     doc.moveDown(1); // Espacio adicional
@@ -204,6 +205,13 @@ exports.createAtraso = async (req, res) => {
                 return res.status(404).json({ error: 'No se encontró el número de celular del apoderado' });
             }
 
+            // Obtener la cantidad de atrasos del alumno
+            const countResult = await client.query(
+                'SELECT COUNT(*) FROM atrasos WHERE rut_alumno = $1',
+                [rutAlumno]
+            );
+            const cantidadAtrasos = parseInt(countResult.rows[0].count);
+
             const baucherPath = generateBaucher({
                 curso,
                 nombre: `${alumno.nombre_alumno}`,
@@ -217,7 +225,7 @@ exports.createAtraso = async (req, res) => {
                     minute: '2-digit'
                   }).format(fechaAtrasos),
                   
-                codAtraso,
+                cantidadAtrasos,
             });
 
             console.log('Baucher generado correctamente.');
