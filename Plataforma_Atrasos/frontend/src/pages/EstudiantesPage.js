@@ -244,7 +244,7 @@ export default function EstudiantesPage() {
                       label="Filas"
                       onChange={(e) => { setRowsPerPage(e.target.value); setPage(1); }}
                     >
-                      {[10, 20, 50, 100].map(num => (
+                      {[2000].map(num => (
                         <MenuItem key={num} value={num}>{num}</MenuItem>
                       ))}
                     </Select>
