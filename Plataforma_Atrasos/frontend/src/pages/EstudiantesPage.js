@@ -6,6 +6,8 @@ import {
   CardHeader, Table, TableHead, TableRow, TableCell, TableBody,
   Paper
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import { jwtDecode } from 'jwt-decode';
 import { getEstudiantes, createEstudiante, updateEstudiante } from '../services/estudiantesService';
 import { getCursos } from '../services/cursosService';
@@ -24,7 +26,7 @@ export default function EstudiantesPage() {
   const [filtered, setFiltered] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
+  const [editingIndex, setEditingIndex] = useState(null);
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,10 +34,11 @@ export default function EstudiantesPage() {
   const [userRole, setUserRole] = useState(null);
   const [searchRut, setSearchRut] = useState('');
   const [searchNombre, setSearchNombre] = useState('');
-  const [searchCurso, setSearchCurso] = useState(''); // now used for dropdown value
+  const [searchCurso, setSearchCurso] = useState('');
 
+// pagination
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(2000);
+  const [rowsPerPage] = useState(10);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -64,10 +67,11 @@ export default function EstudiantesPage() {
     return c ? c.nombre_curso : '';
   }, [cursos]);
 
+  // filter effect
   useEffect(() => {
     const f = estudiantes.filter(e =>
-      e.rut_alumno.toLowerCase().includes(searchRut.toLowerCase()) &&
-      e.nombre_alumno.toLowerCase().includes(searchNombre.toLowerCase()) &&
+      (e.rut_alumno || '').toLowerCase().includes(searchRut.toLowerCase()) &&
+      (e.nombre_alumno || '').toLowerCase().includes(searchNombre.toLowerCase()) &&
       (searchCurso === '' || e.cod_curso === searchCurso)
     );
     setFiltered(f);
@@ -75,26 +79,32 @@ export default function EstudiantesPage() {
   }, [searchRut, searchNombre, searchCurso, estudiantes]);
 
   const paginated = useMemo(() => {
-    return filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+    const start = (page - 1) * rowsPerPage;
+    return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page, rowsPerPage]);
 
-  const handleShowModal = student => {
-    setEditingStudent(student);
-    setForm(student ? {
-      rut: student.rut_alumno,
-      nombre: student.nombre_alumno,
-      cod_curso: student.cod_curso,
-      telefono: student.n_celular_apoderado,
-      correo: student.correo_alumno || '',
-      apoderado: student.apoderado
-    } : initialForm);
+  const handleShowModal = index => {
+    setEditingIndex(index);
+    if (index !== null) {
+      const e = estudiantes[index];
+      setForm({
+        rut: e.rut_alumno,
+        nombre: e.nombre_alumno,
+        cod_curso: e.cod_curso,
+        telefono: e.n_celular_apoderado,
+        correo: e.correo_alumno || '',
+        apoderado: e.apoderado
+      });
+    } else {
+      setForm(initialForm);
+    }
     setFormErrors({});
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setEditingStudent(null);
+    setEditingIndex(null);
     setForm(initialForm);
     setFormErrors({});
   };
@@ -110,7 +120,7 @@ export default function EstudiantesPage() {
     const errs = {};
     if (!form.rut || form.rut.length < 8) errs.rut = 'RUT inválido';
     if (!form.nombre) errs.nombre = 'Nombre requerido';
-    if (!form.cod_curso) errs.cod_curso = 'Curso requerido';
+    if (!form.cod_curso) errs.cod_curso = 'Seleccione un curso';
     if (!form.telefono || !/^\d{8,15}$/.test(form.telefono)) errs.telefono = 'Teléfono inválido';
     if (!form.apoderado) errs.apoderado = 'Apoderado requerido';
     setFormErrors(errs);
@@ -122,8 +132,10 @@ export default function EstudiantesPage() {
     if (!validateForm()) return;
     setSaving(true);
     try {
-      if (editingStudent) {
-        await updateEstudiante(editingStudent.rut_alumno, {
+      let updatedList;
+      if (editingIndex !== null) {
+        const original = estudiantes[editingIndex].rut_alumno;
+        await updateEstudiante(original, {
           nuevo_rut: form.rut,
           nombre_alumno: form.nombre,
           cod_curso: form.cod_curso,
@@ -131,16 +143,27 @@ export default function EstudiantesPage() {
           correo_alumno: form.correo,
           apoderado: form.apoderado
         });
-        setEstudiantes(estudiantes.map(est =>
-          est.rut_alumno === editingStudent.rut_alumno
-            ? { ...est, ...form }
+        updatedList = estudiantes.map((est, i) =>
+          i === editingIndex
+            ? {
+                ...est,
+                nombre_alumno: form.nombre,
+                cod_curso: form.cod_curso,
+                n_celular_apoderado: form.telefono,
+                correo_alumno: form.correo,
+                apoderado: form.apoderado
+              }
             : est
-        ));
+        );
       } else {
         const nuevo = await createEstudiante(form);
-        setEstudiantes([ ...estudiantes, nuevo ]);
+        updatedList = [ ...estudiantes, nuevo ];
       }
+      setEstudiantes(updatedList);
+      setFiltered(updatedList);
       handleCloseModal();
+    } catch (err) {
+      console.error('Error al guardar datos.', err);
     } finally {
       setSaving(false);
     }
@@ -156,22 +179,23 @@ export default function EstudiantesPage() {
         <CardHeader
           title="Gestión de Estudiantes"
           titleTypographyProps={{ variant: 'h5', fontWeight: 'bold' }}
-          sx={{ textAlign: 'center' }}
+          sx={{ textAlign: 'center', pb: 0 }}
         />
         <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
             <TextField
-              label="RUT"
+              label="Buscar por RUT"
               size="small"
               value={searchRut}
               onChange={e => setSearchRut(e.target.value)}
             />
             <TextField
-              label="Nombre"
+              label="Buscar por Nombre"
               size="small"
               value={searchNombre}
               onChange={e => setSearchNombre(e.target.value)}
             />
+            {/* Curso filter as Select */}
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel>Curso</InputLabel>
               <Select
@@ -188,13 +212,21 @@ export default function EstudiantesPage() {
               </Select>
             </FormControl>
             <Box flexGrow={1} />
-            <Button variant="contained" onClick={() => handleShowModal(null)}>
-              + Nuevo Estudiante
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => handleShowModal(null)}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              Nuevo Estudiante
             </Button>
           </Box>
 
           {loading ? (
             <Box textAlign="center"><CircularProgress /></Box>
+          ) : filtered.length === 0 ? (
+            <Typography color="text.secondary">No hay estudiantes registrados.</Typography>
           ) : (
             <Paper elevation={2}>
               <Table>
@@ -208,7 +240,7 @@ export default function EstudiantesPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {paginated.map(est => (
+                  {paginated.map((est, idx) => (
                     <TableRow key={est.rut_alumno} hover>
                       <TableCell>{est.rut_alumno}</TableCell>
                       <TableCell>{est.nombre_alumno}</TableCell>
@@ -220,7 +252,9 @@ export default function EstudiantesPage() {
                         <Button
                           size="small"
                           variant="outlined"
-                          onClick={() => handleShowModal(est)}
+                          color="primary"
+                          startIcon={<EditIcon />}
+                          onClick={() => handleShowModal(estudiantes.indexOf(est))}
                         >
                           Editar
                         </Button>
@@ -236,11 +270,10 @@ export default function EstudiantesPage() {
 
       <Dialog open={showModal} onClose={handleCloseModal} fullWidth maxWidth="sm">
         <DialogTitle>
-          {editingStudent ? '✏️ Editar Estudiante' : '➕ Agregar Estudiante'}
+          {editingIndex !== null ? '✏️ Editar Estudiante' : '➕ Agregar Estudiante'}
         </DialogTitle>
         <Box component="form" onSubmit={handleSubmit}>
-          <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Ahora RUT es editable en edición */}
+          <DialogContent sx={{ display:'flex', flexDirection:'column', gap:2 }}>
             <TextField
               label="RUT"
               name="rut"
@@ -248,6 +281,8 @@ export default function EstudiantesPage() {
               onChange={handleChange}
               error={!!formErrors.rut}
               helperText={formErrors.rut}
+              disabled={editingIndex !== null}
+              fullWidth
             />
             <TextField
               label="Nombre completo"
@@ -256,8 +291,9 @@ export default function EstudiantesPage() {
               onChange={handleChange}
               error={!!formErrors.nombre}
               helperText={formErrors.nombre}
+              fullWidth
             />
-            <FormControl>
+            <FormControl fullWidth>
               <InputLabel>Curso</InputLabel>
               <Select
                 name="cod_curso"
@@ -265,6 +301,7 @@ export default function EstudiantesPage() {
                 label="Curso"
                 onChange={handleChange}
                 error={!!formErrors.cod_curso}
+                sx={{ mb: 1 }}
               >
                 {cursos.map(c => (
                   <MenuItem key={c.cod_curso} value={c.cod_curso}>
@@ -283,6 +320,7 @@ export default function EstudiantesPage() {
               onChange={handleChange}
               error={!!formErrors.telefono}
               helperText={formErrors.telefono}
+              fullWidth
             />
             <TextField
               label="Correo"
@@ -290,6 +328,7 @@ export default function EstudiantesPage() {
               type="email"
               value={form.correo}
               onChange={handleChange}
+              fullWidth
             />
             <TextField
               label="Nombre apoderado"
@@ -298,9 +337,10 @@ export default function EstudiantesPage() {
               onChange={handleChange}
               error={!!formErrors.apoderado}
               helperText={formErrors.apoderado}
+              fullWidth
             />
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ pr:3, pb:2 }}>
             <Button onClick={handleCloseModal}>Cancelar</Button>
             <Button type="submit" variant="contained" disabled={saving}>
               {saving ? <CircularProgress size={20} /> : 'Guardar'}
@@ -309,5 +349,5 @@ export default function EstudiantesPage() {
         </Box>
       </Dialog>
     </Box>
-);
+  );
 }
