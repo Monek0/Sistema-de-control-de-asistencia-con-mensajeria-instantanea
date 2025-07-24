@@ -23,7 +23,7 @@ export default function EstudiantesPage() {
   const [filtered, setFiltered] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingStudent, setEditingStudent] = useState(null); // Cambiado: guardar el estudiante completo
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +35,7 @@ export default function EstudiantesPage() {
 
   // NUEVO: Estados para paginación
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(2000);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -83,15 +83,16 @@ export default function EstudiantesPage() {
     return filtered.slice(startIndex, startIndex + rowsPerPage);
   }, [filtered, page, rowsPerPage]);
 
-  const handleShowModal = (index = null) => {
-    setEditingIndex(index);
-    setForm(index !== null ? {
-      rut: estudiantes[index].rut_alumno,
-      nombre: estudiantes[index].nombre_alumno,
-      cod_curso: estudiantes[index].cod_curso,
-      telefono: estudiantes[index].n_celular_apoderado,
-      correo: estudiantes[index].correo_alumno || '',
-      apoderado: estudiantes[index].apoderado
+  // Cambiado: ahora recibe el estudiante completo en lugar del índice
+  const handleShowModal = (student = null) => {
+    setEditingStudent(student);
+    setForm(student !== null ? {
+      rut: student.rut_alumno,
+      nombre: student.nombre_alumno,
+      cod_curso: student.cod_curso,
+      telefono: student.n_celular_apoderado,
+      correo: student.correo_alumno || '',
+      apoderado: student.apoderado
     } : initialForm);
     setFormErrors({});
     setShowModal(true);
@@ -99,7 +100,7 @@ export default function EstudiantesPage() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setEditingIndex(null);
+    setEditingStudent(null);
     setForm(initialForm);
     setFormErrors({});
   };
@@ -113,7 +114,7 @@ export default function EstudiantesPage() {
 
   const validateForm = () => {
     const errors = {};
-    if (editingIndex === null) {
+    if (editingStudent === null) {
       if (!form.rut || form.rut.length < 8) errors.rut = 'RUT inválido.';
       if (!form.nombre) errors.nombre = 'Nombre requerido.';
       if (!form.cod_curso) errors.cod_curso = 'Seleccione un curso.';
@@ -132,6 +133,7 @@ export default function EstudiantesPage() {
 
     setSaving(true);
     try {
+
       if (editingIndex !== null) {
         const rut = estudiantes[editingIndex].rut_alumno;
         await updateEstudiante(rut,{
@@ -153,8 +155,27 @@ export default function EstudiantesPage() {
           correo_alumno: form.correo,
           apoderado: form.apoderado
         };
+
+      if (editingStudent !== null) {
+        // Editando: usar el RUT del estudiante que estamos editando
+        const rut = editingStudent.rut_alumno;
+        await updateEstudiante(rut, form);
+
+        // Actualizar el estudiante en el array original
+        const updated = estudiantes.map(est => 
+          est.rut_alumno === rut ? {
+            ...est,
+            nombre_alumno: form.nombre,
+            cod_curso: form.cod_curso,
+            n_celular_apoderado: form.telefono,
+            correo_alumno: form.correo,
+            apoderado: form.apoderado
+          } : est
+        );
+
         setEstudiantes(updated);
       } else {
+        // Creando nuevo estudiante
         const res = await createEstudiante(form);
         setEstudiantes([...estudiantes, res]);
       }
@@ -232,7 +253,8 @@ export default function EstudiantesPage() {
                       <Box component="td" sx={{ p: 1 }}>{est.correo_alumno}</Box>
                       <Box component="td" sx={{ p: 1 }}>{est.apoderado}</Box>
                       <Box component="td" sx={{ p: 1 }}>
-                        <Button size="small" variant="outlined" onClick={() => handleShowModal(idx)}>Editar</Button>
+                        {/* Cambiado: pasar el objeto estudiante completo en lugar del índice */}
+                        <Button size="small" variant="outlined" onClick={() => handleShowModal(est)}>Editar</Button>
                       </Box>
                     </Box>
                   ))}
@@ -252,7 +274,7 @@ export default function EstudiantesPage() {
                       label="Filas"
                       onChange={(e) => { setRowsPerPage(e.target.value); setPage(1); }}
                     >
-                      {[10, 20, 50, 100].map(num => (
+                      {[10, 20, 50, 100, 2000].map(num => (
                         <MenuItem key={num} value={num}>{num}</MenuItem>
                       ))}
                     </Select>
@@ -269,11 +291,15 @@ export default function EstudiantesPage() {
       {/* Modal estudiante */}
       <Dialog open={showModal} onClose={handleCloseModal} fullWidth maxWidth="sm">
         <DialogTitle>
-          {editingIndex !== null ? '✏️ Editar Estudiante' : '➕ Agregar Estudiante'}
+          {editingStudent !== null ? '✏️ Editar Estudiante' : '➕ Agregar Estudiante'}
         </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+
             <TextField label="RUT" name="rut" value={form.rut} onChange={handleChange} error={!!formErrors.rut} helperText={formErrors.rut}  />
+
+            <TextField label="RUT" name="rut" value={form.rut} onChange={handleChange} error={!!formErrors.rut} helperText={formErrors.rut} disabled={editingStudent !== null} />
+
             <TextField label="Nombre completo" name="nombre" value={form.nombre} onChange={handleChange} error={!!formErrors.nombre} helperText={formErrors.nombre} />
             <FormControl>
               <InputLabel>Curso</InputLabel>
