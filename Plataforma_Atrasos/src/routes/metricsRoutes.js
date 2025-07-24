@@ -4,7 +4,10 @@ const {
   getWeeklyCount,
   getMonthlyTrend,
   getTopUsers,
-  getJustifiedVsNot
+  getJustifiedVsNot,
+  getLevels, 
+  getTopStudents, 
+  getTopCourses
 } = require('../controllers/metricsController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
@@ -16,6 +19,10 @@ router.get('/weekly', getWeeklyCount);
 router.get('/monthly-trend', getMonthlyTrend);
 router.get('/top-users', getTopUsers);
 router.get('/justified-vs-not', getJustifiedVsNot);
+router.get('/:type/levels', getLevels);
+router.get('/:type/top-students', getTopStudents);
+router.get('/:type/top-courses', getTopCourses);
+
 
 
 module.exports = router;

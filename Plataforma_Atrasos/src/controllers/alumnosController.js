@@ -72,7 +72,7 @@ exports.updateAlumno = async (req, res) => {
   const client = await getClient();
   try {
     const { rut_alumno } = req.params;
-    const { nombre_alumno, cod_curso, n_celular_apoderado, correo_alumno, apoderado } = req.body;
+    const { nuevo_rut, nombre_alumno, cod_curso, n_celular_apoderado, correo_alumno, apoderado } = req.body;
 
     const alumnoResult = await client.query(
       `SELECT * FROM alumnos WHERE rut_alumno = $1`,
@@ -85,14 +85,15 @@ exports.updateAlumno = async (req, res) => {
 
     const result = await client.query(`
       UPDATE alumnos 
-      SET nombre_alumno = $1,
-          cod_curso = $2,
-          n_celular_apoderado = $3,
-          correo_alumno = $4,
-          apoderado = $5
-      WHERE rut_alumno = $6
+      SET rut_alumno = $1,
+          nombre_alumno = $2,
+          cod_curso = $3,
+          n_celular_apoderado = $4,
+          correo_alumno = $5,
+          apoderado = $6
+      WHERE rut_alumno = $7
       RETURNING *
-    `, [nombre_alumno, cod_curso, n_celular_apoderado, correo_alumno, apoderado, rut_alumno]);
+    `, [nuevo_rut || rut_alumno, nombre_alumno, cod_curso, n_celular_apoderado, correo_alumno, apoderado, rut_alumno]);
 
     res.json(result.rows[0]);
   } catch (error) {

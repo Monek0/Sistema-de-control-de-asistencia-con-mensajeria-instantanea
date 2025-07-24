@@ -134,11 +134,19 @@ export default function EstudiantesPage() {
     try {
       if (editingIndex !== null) {
         const rut = estudiantes[editingIndex].rut_alumno;
-        await updateEstudiante(rut, form);
+        await updateEstudiante(rut,{
+          nuevo_rut: form.rut,
+          nombre_alumno: form.nombre,
+          cod_curso: form.cod_curso,
+          n_celular_apoderado: form.telefono,
+          correo_alumno: form.correo,
+          apoderado: form.apoderado
+        });
 
         const updated = [...estudiantes];
         updated[editingIndex] = {
           ...updated[editingIndex],
+          rut_alumno: form.rut,
           nombre_alumno: form.nombre,
           cod_curso: form.cod_curso,
           n_celular_apoderado: form.telefono,
@@ -265,7 +273,7 @@ export default function EstudiantesPage() {
         </DialogTitle>
         <form onSubmit={handleSubmit}>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField label="RUT" name="rut" value={form.rut} onChange={handleChange} error={!!formErrors.rut} helperText={formErrors.rut} disabled={editingIndex !== null} />
+            <TextField label="RUT" name="rut" value={form.rut} onChange={handleChange} error={!!formErrors.rut} helperText={formErrors.rut}  />
             <TextField label="Nombre completo" name="nombre" value={form.nombre} onChange={handleChange} error={!!formErrors.nombre} helperText={formErrors.nombre} />
             <FormControl>
               <InputLabel>Curso</InputLabel>

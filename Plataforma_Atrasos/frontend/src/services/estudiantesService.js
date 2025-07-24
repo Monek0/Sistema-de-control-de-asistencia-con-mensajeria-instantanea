@@ -48,6 +48,7 @@ export const createEstudiante = async (form) => {
 // Actualizar estudiante
 export const updateEstudiante = async (rut, form) => {
   const payload = {
+    nuevo_rut: form.rut,
     nombre_alumno: form.nombre,
     cod_curso: form.cod_curso || null,
     n_celular_apoderado: form.telefono || null,

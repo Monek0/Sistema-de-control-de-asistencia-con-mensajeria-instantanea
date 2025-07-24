@@ -1,32 +1,27 @@
-// src/pages/ReportsPage.js
-
 import React, { useEffect, useState } from 'react';
-import Modal from 'react-modal';
 import axios from 'axios';
-import {
-  LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
-  PieChart, Pie, Cell, ResponsiveContainer
-} from 'recharts';
 import { toast, ToastContainer } from 'react-toastify';
+import {
+  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid
+} from 'recharts';
 import 'react-toastify/dist/ReactToastify.css';
-import AttendanceReport from '../components/AttendanceReport';
-import AttendanceReportCustomRange from '../components/AttendanceReportCustomRange';
-
-Modal.setAppElement('#root');
 
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
   : 'https://api.edupuntual.cl';
 
-const COLORS = ['#4caf50', '#f44336'];
+const COLORS = ['#42a5f5', '#90caf9']; // Justificado, No Justificado
 
 const ReportsPage = () => {
   const [kpis, setKpis] = useState({ daily: 0, weekly: 0, monthly: 0 });
-  const [monthlyTrend, setMonthlyTrend] = useState([]);
-  const [topUsers, setTopUsers] = useState([]);
-  const [justifiedVsNot, setJustifiedVsNot] = useState([]);
-  const [showDailyModal, setShowDailyModal] = useState(false);
-  const [showWeeklyModal, setShowWeeklyModal] = useState(false);
+  const [justificationData, setJustificationData] = useState([]);
+  const [topStudents, setTopStudents] = useState([]);
+  const [topCourses, setTopCourses] = useState([]);
+  const [cursos, setCursos] = useState([]);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedCurso, setSelectedCurso] = useState('');
+  const [selectedAlumno, setSelectedAlumno] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -36,266 +31,274 @@ const ReportsPage = () => {
       axios.get(`${API_BASE_URL}/api/metrics/daily`, { headers }),
       axios.get(`${API_BASE_URL}/api/metrics/weekly`, { headers }),
       axios.get(`${API_BASE_URL}/api/metrics/monthly-trend`, { headers }),
-      axios.get(`${API_BASE_URL}/api/metrics/top-users`, { headers }),
-      axios.get(`${API_BASE_URL}/api/metrics/justified-vs-not`, { headers })
-    ]).then(([d, w, m, t, j]) => {
+      axios.get(`${API_BASE_URL}/api/cursos`, { headers })
+    ]).then(([d, w, m, c]) => {
       setKpis({
         daily: d.data.count,
         weekly: w.data.reduce((sum, r) => sum + r.count, 0),
         monthly: m.data.reduce((sum, r) => sum + r.count, 0)
       });
-      setMonthlyTrend(m.data.map(r => ({ name: r.day, value: r.count })));
-      setTopUsers(t.data.map(r => ({
-        name: r.nombre_alumno || r.rut_alumno,
-        value: r.count
-      })));
-      setJustifiedVsNot([
-        { name: 'Justificados', value: j.data.justified },
-        { name: 'No Justificados', value: j.data.not }
-      ]);
-      toast.success('Datos cargados correctamente');
-    }).catch(error => {
-      console.error(error);
-      toast.error('Error cargando datos');
+      setCursos(c.data.map(curso => curso.nombre_curso));
+      toast.success('KPIs cargados correctamente');
+    }).catch(() => {
+      toast.error('Error cargando KPIs');
     });
   }, []);
 
+  const fetchChartsData = () => {
+    if (!selectedReport) return;
+
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}` };
+    const type = selectedReport.toLowerCase();
+
+    axios.get(`${API_BASE_URL}/api/metrics/${type}/levels`, {
+      headers,
+      params: { curso: selectedCurso, alumno: selectedAlumno }
+    }).then(res => setJustificationData(res.data))
+      .catch(() => toast.error('Error cargando justificados'));
+
+    axios.get(`${API_BASE_URL}/api/metrics/${type}/top-students`, {
+      headers,
+      params: { curso: selectedCurso, alumno: selectedAlumno }
+    }).then(res => {
+      if (res.data.length === 0) {
+        toast.info('No se encontraron registros para el alumno especificado.');
+      }
+      setTopStudents(res.data);
+    }).catch(() => toast.error('Error cargando top estudiantes'));
+
+    axios.get(`${API_BASE_URL}/api/metrics/${type}/top-courses`, {
+      headers,
+      params: { curso: selectedCurso, alumno: selectedAlumno }
+    }).then(res => setTopCourses(res.data))
+      .catch(() => toast.error('Error cargando top cursos'));
+  };
+
+  useEffect(() => {
+    if (selectedReport) {
+      fetchChartsData();
+      console.log('Justification Data:', justificationData);
+    }
+  }, [selectedReport, selectedCurso, selectedAlumno]);
+
   const styles = {
-    button: {
-      backgroundColor: 'rgb(1, 87, 155)',
-      border: 'none',
-      borderRadius: '0.3125rem',
-      color: '#fff',
-      cursor: 'pointer',
-      margin: '0.3125rem',
-      padding: '0.625rem 1.25rem',
-      fontSize: '0.875rem',
-      fontWeight: '500',
-      transition: 'background-color 0.3s ease, transform 0.2s ease',
-    },
-    buttonHover: {
-      backgroundColor: 'rgb(1, 67, 135)',
-      transform: 'translateY(-0.0625rem)',
-    },
-    chartBox: {
-      background: '#fff',
-      borderRadius: '0.5rem',
-      boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
-      padding: '1rem'
-    },
     container: {
-      backgroundColor: '#f0f2f5',
+      backgroundColor: '#f9fafc',
       fontFamily: 'Poppins, Arial, sans-serif',
       margin: '0 auto',
-      paddingInline: '1rem',
-      paddingTop: '1rem',
-      paddingBottom: '1rem'
-    },
-    description: {
-      color: '#666',
-      fontSize: '0.875rem',
-      marginTop: '0.3125rem'
-    },
-    kpiCard: {
-      background: '#fff',
-      borderRadius: '0.5rem',
-      boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
-      cursor: 'pointer',
-      flex: '1 1 25%',
       padding: '1rem',
-      textAlign: 'center',
-      transition: 'transform 0.2s, box-shadow 0.2s'
-    },
-    kpiCardHover: {
-      boxShadow: '0 0.25rem 0.75rem rgba(0,0,0,0.15)',
-      transform: 'scale(1.02)'
+      maxWidth: '1300px'
     },
     kpiContainer: {
       display: 'flex',
       flexWrap: 'wrap',
       gap: '1rem',
-      marginBottom: '1.25rem'
+      marginBottom: '1.5rem'
     },
-    listContainer: {
+    kpiCard: {
       background: '#fff',
-      borderRadius: '0.5rem',
+      borderRadius: '0.75rem',
       boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
-      padding: '1rem'
+      flex: '1 1 25%',
+      padding: '1rem',
+      textAlign: 'center'
     },
-    listItem: {
-      borderBottom: '1px solid #eee',
+    reportCardsContainer: {
       display: 'flex',
       justifyContent: 'space-between',
-      padding: '0.5rem'
-    },
-    section: {
-      marginBottom: '2.5rem'
-    },
-    title: {
-      fontSize: '1.25rem',
-      fontWeight: 'bold',
-      marginBottom: '0.625rem'
-    },
-    buttonsContainer: {
-      textAlign: 'center',
-      display: 'flex',
-      justifyContent: 'center',
       gap: '1rem',
+      marginBottom: '1rem',
+      flexWrap: 'wrap'
+    },
+    reportCard: {
+      flex: '1 1 20%',
+      cursor: 'pointer',
+      background: '#fff',
+      textAlign: 'center',
+      padding: '1rem',
+      borderRadius: '8px',
+      boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
+      transition: 'all 0.2s ease-in-out'
+    },
+    reportCardActive: {
+      border: '2px solid #1976d2',
+      background: '#e3f2fd'
+    },
+    filtersContainer: {
+      display: 'flex',
+      gap: '1rem',
+      marginTop: '1rem',
       flexWrap: 'wrap',
-      marginTop: '2rem'
+      justifyContent: 'center',
+      marginBottom: '2rem'
+    },
+    filterInput: {
+      padding: '0.5rem',
+      borderRadius: '6px',
+      border: '1px solid #ccc',
+      minWidth: '200px',
+      transition: 'all 0.3s ease-in-out',
+      cursor: 'pointer'
+    },
+    chartsGrid: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '1rem'
+    },
+    chartContainer: {
+      background: '#fff',
+      padding: '1rem',
+      borderRadius: '8px',
+      boxShadow: '0 0.125rem 0.5rem rgba(0,0,0,0.1)',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '400px'
+    },
+    studentItem: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'start',
+      background: '#e3f2fd',
+      padding: '0.75rem 1rem',
+      borderRadius: '8px',
+      marginBottom: '0.5rem',
+      fontWeight: 'bold',
+      color: '#1565c0',
+      transition: 'background 0.2s ease-in-out',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+      cursor: 'default',
+      '&:hover': {
+        background: '#bbdefb'
+      }
+    },
+    avatar: {
+      backgroundColor: '#1976d2',
+      color: '#fff',
+      borderRadius: '50%',
+      width: '36px',
+      height: '36px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: '0.75rem',
+      fontSize: '16px'
+    },
+    courseItem: {
+      background: '#e3f2fd',
+      padding: '0.75rem',
+      borderRadius: '6px',
+      marginBottom: '0.5rem',
+      fontWeight: 'bold',
+      color: '#1976d2'
+    },
+    scrollBox: {
+      flex: 1,
+      overflowY: 'auto',
+      paddingRight: '4px',
     }
   };
-  
+
+  const renderCharts = () => {
+    if (!selectedReport) {
+      return <p style={{ textAlign: 'center', marginTop: '2rem' }}>Selecciona un tipo de reporte.</p>;
+    }
+
+    return (
+      <>
+        <div style={styles.filtersContainer}>
+          <select
+            value={selectedCurso}
+            onChange={(e) => setSelectedCurso(e.target.value === selectedCurso ? '' : e.target.value)}
+            style={styles.filterInput}
+          >
+            <option value="">Todos los cursos</option>
+            {cursos.map(curso => (
+              <option key={curso} value={curso}>{curso}</option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            placeholder="Buscar alumno por nombre"
+            value={selectedAlumno}
+            onChange={(e) => setSelectedAlumno(e.target.value)}
+            style={styles.filterInput}
+          />
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '1rem'
+        }}>    
+
+          <div style={styles.chartContainer}>
+            <h4 style={{ textAlign: 'center', marginBottom: '1rem' }}>Estudiantes con más atrasos registrados</h4>
+            <div style={styles.scrollBox}>
+              <ul style={{ listStyle: 'none', padding: 0 }}>
+                {topStudents.map((s, idx) => (
+                  <li key={idx} style={styles.studentItem}>
+                    <div style={styles.avatar}>
+                      {s.nombre?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {s.nombre} — {s.cantidad} atrasos
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div style={styles.chartContainer}>
+            <h4 style={{ textAlign: 'center', marginBottom: '1rem' }}>Cursos con más atrasos</h4>
+            <div style={styles.scrollBox}> 
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {topCourses.map((c, idx) => (
+                <li key={idx} style={styles.courseItem}>
+                  📘 {c.curso} — {c.cantidad} atrasos
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </>
+    );
+  };
 
   return (
     <div style={styles.container}>
       <ToastContainer position="bottom-right" />
-
-      {/* KPIs */}
       <div style={styles.kpiContainer}>
         {[{ label: 'Atrasos Hoy', value: kpis.daily, icon: '📅' },
-          { label: 'Atrasos Semana', value: kpis.weekly, icon: '🗓️' },
-          { label: 'Atrasos Mes', value: kpis.monthly, icon: '📈' }
-        ].map(({ label, value, icon }) => (
+        { label: 'Atrasos Semana', value: kpis.weekly, icon: '🗓️' },
+        { label: 'Atrasos Mes', value: kpis.monthly, icon: '📈' }].map(({ label, value, icon }) => (
           <div key={label} style={styles.kpiCard}>
-            <div style={{ fontSize: 32 }}>{icon}</div>
-            <h4>{label}</h4>
-            <p style={{ fontSize: 24 }}>{value}</p>
+            <div style={{ fontSize: 36, marginBottom: '0.5rem' }}>{icon}</div>
+            <h4 style={{ marginBottom: '0.25rem', color: '#1976d2' }}>{label}</h4>
+            <p style={{ fontSize: 28, fontWeight: 'bold' }}>{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Tendencia Mensual */}
-      <div style={styles.section}>
-        <div style={styles.chartBox}>
-          <h3 style={styles.title}>Tendencia Mensual de Atrasos</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={monthlyTrend} aria-label="Tendencia mensual de atrasos">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="rgb(1, 87, 155)" />
-            </LineChart>
-          </ResponsiveContainer>
-          <p style={styles.description}>
-            Este gráfico muestra la cantidad de atrasos registrados día por día en el mes actual.
-          </p>
-        </div>
+      <div style={styles.reportCardsContainer}>
+        {['Diario', 'Semanal', 'Mensual', 'Anual'].map(tipo => (
+          <div
+            key={tipo}
+            onClick={() => setSelectedReport(tipo)}
+            style={{
+              ...styles.reportCard,
+              ...(selectedReport === tipo ? styles.reportCardActive : {})
+            }}
+          >
+            <h4>{tipo}</h4>
+          </div>
+        ))}
       </div>
 
-      {/* Sección de Distribución y Top 5 en línea */}
-      <div style={{ ...styles.section, display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
-        {/* Gráfico de Pie */}
-        <div style={{ ...styles.chartBox, flex: 1, minWidth: '18.75rem' }}>
-          <h3 style={styles.title}>Distribución de Atrasos Justificados y No Justificados</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={justifiedVsNot}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={50}
-                outerRadius={80}
-                label
-              >
-                {justifiedVsNot.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <p style={styles.description}>
-            Este gráfico muestra la proporción de atrasos que fueron justificados frente a los que no lo fueron.
-          </p>
-        </div>
-
-        {/* Lista de Top 5 */}
-        <div style={{ ...styles.listContainer, flex: 1, minWidth: '18.75rem' }}>
-          <h3 style={styles.title}>Top 5 Estudiantes con Más Atrasos</h3>
-          {topUsers.length > 0 ? (
-            topUsers.map((user, idx) => {
-              const color = user.value > 5 ? '#f44336' : user.value > 2 ? '#ff9800' : '#4caf50';
-              return (
-                <div key={idx} style={{ ...styles.listItem }}>
-                  <span>{idx + 1}. {user.name}</span>
-                  <span style={{ color }}>{user.value} atrasos</span>
-                </div>
-              );
-            })
-          ) : (
-            <p>No hay registros suficientes.</p>
-          )}
-        </div>
-      </div>
-
-      {/* Botones Reportes */}
-      <div style={styles.buttonsContainer}>
-        <button 
-          style={styles.button} 
-          onClick={() => setShowDailyModal(true)}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgb(1, 67, 135)';
-            e.target.style.transform = 'translateY(-0.0625rem)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'rgb(1, 87, 155)';
-            e.target.style.transform = 'translateY(0)';
-          }}
-        >
-          Ver Reporte Diario
-        </button>
-        <button 
-          style={styles.button} 
-          onClick={() => setShowWeeklyModal(true)}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = 'rgb(1, 67, 135)';
-            e.target.style.transform = 'translateY(-0.0625rem)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = 'rgb(1, 87, 155)';
-            e.target.style.transform = 'translateY(0)';
-          }}
-        >
-          Ver Reporte Semanal
-        </button>
-      </div>
-
-      {/* Modals */}
-      <Modal 
-        isOpen={showDailyModal} 
-        onRequestClose={() => setShowDailyModal(false)} 
-        style={{ 
-          content: { 
-            top: '10%', 
-            maxWidth: '43.75rem', 
-            margin: 'auto',
-            borderRadius: '0.5rem',
-            border: 'none',
-            boxShadow: '0 0.25rem 1rem rgba(0,0,0,0.15)'
-          } 
-        }}
-      >
-        <AttendanceReport />
-      </Modal>
-
-      <Modal 
-        isOpen={showWeeklyModal} 
-        onRequestClose={() => setShowWeeklyModal(false)} 
-        style={{ 
-          content: { 
-            top: '10%', 
-            maxWidth: '43.75rem', 
-            margin: 'auto',
-            borderRadius: '0.5rem',
-            border: 'none',
-            boxShadow: '0 0.25rem 1rem rgba(0,0,0,0.15)'
-          } 
-        }}
-      >
-        <AttendanceReportCustomRange />
-      </Modal>
+      {renderCharts()}
     </div>
   );
 };
