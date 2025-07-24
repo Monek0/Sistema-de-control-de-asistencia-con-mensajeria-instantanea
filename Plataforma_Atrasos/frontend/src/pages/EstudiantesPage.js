@@ -38,7 +38,7 @@ export default function EstudiantesPage() {
 
 // pagination
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const [rowsPerPage] = useState(2000);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
