@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
@@ -58,9 +59,17 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
     setError('');
     setBaucherPath(null);
 
+    const toastId = toast.loading('Registrando y enviando atraso a apoderado/a…');
+
     try {
       const rutExiste = await validarRutExistente(rutAlumno);
       if (!rutExiste) {
+        toast.update(toastId, {
+          render: 'El RUT ingresado no existe en la base de datos',
+          type: 'error',
+          isLoading: false,
+          autoClose: 3000
+        });
         setError('El RUT ingresado no existe en la base de datos');
         return;
       }
@@ -75,7 +84,13 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
         const { baucherPath } = response.data;
         setSuccessMessage('Atraso registrado con éxito.');
         setBaucherPath(baucherPath);
-        setNotificationVisible(true);
+        toast.update(toastId, {
+          render: 'Atraso registrado con éxito 🎉',
+          type: 'success',
+          isLoading: false,
+          autoClose: 3000
+        });
+
         if (onSuccess) onSuccess();
         resetForm();
         window.open(`${API_BASE_URL}${baucherPath}`, '_blank');
@@ -83,8 +98,15 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
         setError('Error al registrar el atraso.');
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Error al guardar el atraso: ' + err.message;
-      setError(errorMessage);
+      console.error(err);
+      const msg = err.response?.data?.message || err.message;
+      toast.update(toastId, {
+        render: `Error: ${msg}`,
+        type: 'error',
+        isLoading: false,
+        autoClose: 5000
+      });
+      setError(msg);
     }
   };
 

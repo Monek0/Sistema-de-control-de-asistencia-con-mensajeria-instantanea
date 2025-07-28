@@ -3,6 +3,7 @@ const {
   getDailyCount,
   getWeeklyCount,
   getMonthlyTrend,
+  getAnnualCount,
   getTopUsers,
   getJustifiedVsNot,
   getLevels, 
@@ -17,6 +18,7 @@ router.use(authMiddleware());
 router.get('/daily', getDailyCount);
 router.get('/weekly', getWeeklyCount);
 router.get('/monthly-trend', getMonthlyTrend);
+router.get('/anual', getAnnualCount);
 router.get('/top-users', getTopUsers);
 router.get('/justified-vs-not', getJustifiedVsNot);
 router.get('/:type/levels', getLevels);
