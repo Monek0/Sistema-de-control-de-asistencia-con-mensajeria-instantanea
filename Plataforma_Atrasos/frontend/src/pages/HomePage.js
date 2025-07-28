@@ -11,11 +11,14 @@ import reportIcon from '../assets/icons/report.png';
 import messageIcon from '../assets/icons/message.png';
 import agregarIcon from '../assets/icons/agregar-usuario.png';
 import studentIcon from '../assets/icons/estudiante.png';
+import historialIcon from '../assets/icons/historial.png';
+
 import AttendancePage from './AttendancePage';
 import ReportsPage from './ReportsPage';
 import AtrasosPage from './AtrasosPage';
 import RegisterPage from './RegisterPage';
 import EstudiantesPage from './EstudiantesPage';
+import GlobalMessageSender from './GlobalMessageSender';
 
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
@@ -294,7 +297,9 @@ const HomePage = () => {
           <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Menú</h3>
           <MenuItem icon={controlIcon} text="Control de Atrasos" action="attendance" />
           <MenuItem icon={reportIcon} text="Reportes" action="reports" />
-          <MenuItem icon={messageIcon} text="Mensajería" action="atrasos" />
+          <MenuItem icon={historialIcon} text="Listado de Atrasos" action="atrasos" />
+          <MenuItem icon={messageIcon} text="Mensaje Global" action="mensaje-global" />
+
           {userRole && (userRole === 1) && (
             <MenuItem icon={studentIcon} text="Alumnos" action="estudiantes" />
           )}
@@ -333,6 +338,7 @@ const HomePage = () => {
           {activeMenu === 'attendance' && <AttendancePage />}
           {activeMenu === 'reports' && <ReportsPage />}
           {activeMenu === 'atrasos' && <AtrasosPage />}
+          {activeMenu === 'mensaje-global' && <GlobalMessageSender />}
           {activeMenu === 'estudiantes' && <EstudiantesPage />}
           {activeMenu === 'registro' && <RegisterPage />}
         </motion.div>

@@ -12,6 +12,7 @@ const justificativoRoutes = require('./routes/justificativoRoutes');
 const metricsRoutes = require('./routes/metricsRoutes');
 const alumnoRoutes = require('./routes/alumnoRoutes');
 const cursosRoutes = require('./routes/cursosRoutes');
+const whatsappRoutes = require('./routes/whatsappRoutes');
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use('/api', justificativoRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/alumnos', alumnoRoutes);
 app.use('/api/cursos', cursosRoutes);
+app.use('/api', whatsappRoutes);
 
 // Socket.IO
 const server = http.createServer(app);

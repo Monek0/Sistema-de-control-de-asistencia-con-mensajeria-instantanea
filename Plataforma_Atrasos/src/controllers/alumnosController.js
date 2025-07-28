@@ -103,3 +103,25 @@ exports.updateAlumno = async (req, res) => {
     client.release();
   }
 };
+
+exports.getAlumnosPorCurso = async (req, res) => {
+  const { codCurso } = req.params;
+  const { getClient } = require('../config/db');
+  const client = await getClient();
+  
+  try {
+    const { rows } = await client.query(`
+      SELECT cod_alumno, nombre_alumno, n_celular_apoderado
+      FROM alumnos 
+      WHERE cod_curso = $1 
+      ORDER BY nombre_alumno
+    `, [codCurso]);
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener alumnos por curso:', error);
+    res.status(500).json({ error: 'Error al obtener alumnos' });
+  } finally {
+    client.release();
+  }
+};

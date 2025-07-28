@@ -129,7 +129,6 @@ const registerEvents = (clientInstance) => {
       isInitializing = false;
     }
   });
-  
 };
 
 const sendPDF = async (number, filePath) => {
@@ -149,8 +148,178 @@ const sendPDF = async (number, filePath) => {
   }
 };
 
+const { getClient } = require('../config/db');
+
+// Delay para evitar detección como spam (en ms)
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Función para enviar mensaje a un número específico
+const sendMessage = async (numero, mensaje) => {
+  const formattedNumber = numero.includes('@c.us') ? numero : `${numero}@c.us`;
+  
+  try {
+    console.log(`📨 Enviando mensaje a ${formattedNumber}`);
+    await client.sendMessage(formattedNumber, mensaje);
+    console.log('✅ Mensaje enviado');
+    return { success: true };
+  } catch (err) {
+    console.error(`❌ Error enviando a ${formattedNumber}:`, err.message);
+    return { success: false, error: err.message };
+  }
+};
+
+// Función principal para envío de mensajes globales
+const sendGlobalMessage = async (tipoEnvio, mensaje, opciones = {}) => {
+  const clientDb = await getClient();
+  let enviados = 0;
+  let errores = 0;
+  let total = 0;
+
+  try {
+    let alumnos = [];
+
+    switch (tipoEnvio) {
+      case 'todos':
+        // Obtener todos los alumnos con número de celular
+        const { rows: todosAlumnos } = await clientDb.query(`
+          SELECT nombre_alumno, n_celular_apoderado, cod_curso
+          FROM alumnos
+          WHERE n_celular_apoderado IS NOT NULL AND n_celular_apoderado != ''
+          ORDER BY cod_curso, nombre_alumno
+        `);
+        alumnos = todosAlumnos;
+        break;
+
+      case 'curso':
+        // Obtener alumnos de un curso específico
+        const { rows: alumnosCurso } = await clientDb.query(`
+          SELECT nombre_alumno, n_celular_apoderado, cod_curso
+          FROM alumnos
+          WHERE cod_curso = $1 AND n_celular_apoderado IS NOT NULL AND n_celular_apoderado != ''
+          ORDER BY nombre_alumno
+        `, [opciones.codCurso]);
+        alumnos = alumnosCurso;
+        break;
+
+      case 'alumno':
+        // Obtener un alumno específico
+        const { rows: alumnoEspecifico } = await clientDb.query(`
+          SELECT nombre_alumno, n_celular_apoderado, cod_curso
+          FROM alumnos
+          WHERE cod_alumno = $1 AND n_celular_apoderado IS NOT NULL AND n_celular_apoderado != ''
+        `, [opciones.codAlumno]);
+        alumnos = alumnoEspecifico;
+        break;
+
+      default:
+        throw new Error('Tipo de envío no válido');
+    }
+
+    total = alumnos.length;
+
+    if (total === 0) {
+      return {
+        success: false,
+        message: 'No se encontraron destinatarios con números de teléfono válidos',
+        enviados: 0,
+        errores: 0,
+        total: 0
+      };
+    }
+
+    console.log(`📊 Iniciando envío ${tipoEnvio}: ${total} destinatarios`);
+
+    // Enviar mensajes
+    for (const alumno of alumnos) {
+      const numero = alumno.n_celular_apoderado;
+      const nombre = alumno.nombre_alumno;
+
+      const mensajeCompleto = `Estimado apoderado de ${nombre}, esta es una notificación del Instituto Superior de Comercio. ${mensaje}`;
+
+      const resultado = await sendMessage(numero, mensajeCompleto);
+
+      if (resultado.success) {
+        enviados++;
+      } else {
+        errores++;
+      }
+
+      // Emitir progreso via socket si está disponible
+      if (ioSocket) {
+        ioSocket.emit('message_progress', {
+          actual: enviados + errores,
+          total: total,
+          enviados: enviados,
+          errores: errores
+        });
+      }
+
+      // Esperar 3-5 segundos antes del siguiente envío para evitar spam
+      const delayTime = Math.floor(Math.random() * 2000) + 3000; // 3-5 segundos
+      await delay(delayTime);
+    }
+
+    const porcentajeExito = Math.round((enviados / total) * 100);
+
+    return {
+      success: true,
+      message: `Envío completado: ${enviados}/${total} mensajes enviados exitosamente (${porcentajeExito}%)`,
+      enviados: enviados,
+      errores: errores,
+      total: total
+    };
+
+  } catch (err) {
+    console.error('❌ Error en envío global:', err.message);
+    throw err;
+  } finally {
+    clientDb.release();
+  }
+};
+
+// Funciones específicas para mantener compatibilidad
+const sendGlobalMessageByCourse = async (cursoCodigo, mensajePersonalizado) => {
+  return await sendGlobalMessage('curso', mensajePersonalizado, { codCurso: cursoCodigo });
+};
+
+const sendGlobalMessageToAll = async (mensajePersonalizado) => {
+  return await sendGlobalMessage('todos', mensajePersonalizado);
+};
+
+const sendMessageToStudent = async (codAlumno, mensajePersonalizado) => {
+  return await sendGlobalMessage('alumno', mensajePersonalizado, { codAlumno: codAlumno });
+};
+
+// Función para obtener estadísticas de contactos
+const getContactStats = async () => {
+  const clientDb = await getClient();
+  try {
+    const { rows } = await clientDb.query(`
+      SELECT 
+        COUNT(*) as total_alumnos,
+        COUNT(CASE WHEN n_celular_apoderado IS NOT NULL AND n_celular_apoderado != '' THEN 1 END) as con_telefono,
+        COUNT(CASE WHEN n_celular_apoderado IS NULL OR n_celular_apoderado = '' THEN 1 END) as sin_telefono,
+        COUNT(DISTINCT cod_curso) as total_cursos
+      FROM alumnos
+    `);
+
+    return rows[0];
+  } catch (err) {
+    console.error('❌ Error obteniendo estadísticas:', err);
+    throw err;
+  } finally {
+    clientDb.release();
+  }
+};
+
 module.exports = {
   initializeClient,
   setSocket,
-  sendPDF
+  sendPDF,
+  sendGlobalMessage,
+  sendGlobalMessageByCourse,
+  sendGlobalMessageToAll,
+  sendMessageToStudent,
+  sendMessage,
+  getContactStats
 };

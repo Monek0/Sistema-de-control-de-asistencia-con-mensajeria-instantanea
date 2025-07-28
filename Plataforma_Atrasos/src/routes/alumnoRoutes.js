@@ -11,4 +11,6 @@ router.post('/', alumnosController.createAlumno);
 // Actualizar un alumno existente
 router.put('/:rut_alumno', alumnosController.updateAlumno);
 
+router.get('/curso/:codCurso', alumnosController.getAlumnosPorCurso);
+
 module.exports = router;
