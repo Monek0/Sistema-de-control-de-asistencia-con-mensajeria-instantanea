@@ -9,7 +9,11 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import { jwtDecode } from 'jwt-decode';
-import { getEstudiantes, createEstudiante, updateEstudiante } from '../services/estudiantesService';
+import {
+  getEstudiantes,
+  createEstudiante,
+  updateEstudiante
+} from '../services/estudiantesService';
 import { getCursos } from '../services/cursosService';
 
 const initialForm = {
@@ -36,10 +40,29 @@ export default function EstudiantesPage() {
   const [searchNombre, setSearchNombre] = useState('');
   const [searchCurso, setSearchCurso] = useState('');
 
-// pagination
+  // Paginación
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(2000);
 
+  // 1) Función para cargar TODOS los datos desde el backend
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [estRes, cursosRes] = await Promise.all([
+        getEstudiantes(),
+        getCursos()
+      ]);
+      setEstudiantes(estRes);
+      setFiltered(estRes);
+      setCursos(cursosRes);
+    } catch (err) {
+      console.error('Error cargando datos:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // On mount, y al cambiar rol
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -50,24 +73,16 @@ export default function EstudiantesPage() {
         setUserRole(null);
       }
     }
+    loadData();
   }, []);
 
-  useEffect(() => {
-    Promise.all([getEstudiantes(), getCursos()])
-      .then(([estRes, cursosRes]) => {
-        setEstudiantes(estRes);
-        setFiltered(estRes);
-        setCursos(cursosRes);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
+  // Para mostrar el nombre del curso
   const getCursoNombre = useCallback(cod => {
     const c = cursos.find(x => x.cod_curso === cod);
     return c ? c.nombre_curso : '';
   }, [cursos]);
 
-  // filter effect
+  // Filtrado local
   useEffect(() => {
     const f = estudiantes.filter(e =>
       (e.rut_alumno || '').toLowerCase().includes(searchRut.toLowerCase()) &&
@@ -78,11 +93,13 @@ export default function EstudiantesPage() {
     setPage(1);
   }, [searchRut, searchNombre, searchCurso, estudiantes]);
 
+  // Paginado
   const paginated = useMemo(() => {
     const start = (page - 1) * rowsPerPage;
     return filtered.slice(start, start + rowsPerPage);
   }, [filtered, page, rowsPerPage]);
 
+  // Abrir modal (nuevo o editar)
   const handleShowModal = index => {
     setEditingIndex(index);
     if (index !== null) {
@@ -127,40 +144,19 @@ export default function EstudiantesPage() {
     return !Object.keys(errs).length;
   };
 
+  // 2) Al guardar (crear o editar), llamamos a loadData() para recargar todo
   const handleSubmit = async e => {
     e.preventDefault();
     if (!validateForm()) return;
     setSaving(true);
     try {
-      let updatedList;
       if (editingIndex !== null) {
-        const original = estudiantes[editingIndex].rut_alumno;
-        await updateEstudiante(original, {
-          nuevo_rut: form.rut,
-          nombre_alumno: form.nombre,
-          cod_curso: form.cod_curso,
-          n_celular_apoderado: form.telefono,
-          correo_alumno: form.correo,
-          apoderado: form.apoderado
-        });
-        updatedList = estudiantes.map((est, i) =>
-          i === editingIndex
-            ? {
-                ...est,
-                nombre_alumno: form.nombre,
-                cod_curso: form.cod_curso,
-                n_celular_apoderado: form.telefono,
-                correo_alumno: form.correo,
-                apoderado: form.apoderado
-              }
-            : est
-        );
+        const originalRut = estudiantes[editingIndex].rut_alumno;
+        await updateEstudiante(originalRut, form);
       } else {
-        const nuevo = await createEstudiante(form);
-        updatedList = [ ...estudiantes, nuevo ];
+        await createEstudiante(form);
       }
-      setEstudiantes(updatedList);
-      setFiltered(updatedList);
+      await loadData();           // <-- recarga desde el servidor
       handleCloseModal();
     } catch (err) {
       console.error('Error al guardar datos.', err);
@@ -182,6 +178,7 @@ export default function EstudiantesPage() {
           sx={{ textAlign: 'center', pb: 0 }}
         />
         <CardContent>
+          {/* filtros y botón +Nuevo */}
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
             <TextField
               label="Buscar por RUT"
@@ -195,7 +192,6 @@ export default function EstudiantesPage() {
               value={searchNombre}
               onChange={e => setSearchNombre(e.target.value)}
             />
-            {/* Curso filter as Select */}
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel>Curso</InputLabel>
               <Select
@@ -223,6 +219,7 @@ export default function EstudiantesPage() {
             </Button>
           </Box>
 
+          {/* tabla */}
           {loading ? (
             <Box textAlign="center"><CircularProgress /></Box>
           ) : filtered.length === 0 ? (
@@ -268,6 +265,7 @@ export default function EstudiantesPage() {
         </CardContent>
       </Card>
 
+      {/* modal */}
       <Dialog open={showModal} onClose={handleCloseModal} fullWidth maxWidth="sm">
         <DialogTitle>
           {editingIndex !== null ? '✏️ Editar Estudiante' : '➕ Agregar Estudiante'}
