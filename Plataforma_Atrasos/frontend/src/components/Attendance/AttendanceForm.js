@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { FaCalendarAlt, FaClock } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import { motion } from 'framer-motion';
 
 const API_BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3000'
@@ -16,6 +17,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [baucherPath, setBaucherPath] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); 
   const rutInputRef = useRef(null);
 
   useEffect(() => {
@@ -58,6 +60,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
     e.preventDefault();
     setError('');
     setBaucherPath(null);
+    setIsSubmitting(true); 
 
     const toastId = toast.loading('Registrando y enviando atraso a apoderado/a…');
 
@@ -107,6 +110,8 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
         autoClose: 5000
       });
       setError(msg);
+    } finally {
+      setIsSubmitting(false);                                                  // <<< NUEVO: Desbloquear UI
     }
   };
 
@@ -131,6 +136,28 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
     const dv = valor.slice(-1).toUpperCase();
     return `${cuerpo}-${dv}`;
   };
+
+   const renderBlockingOverlay = () => (
+    <div style={{
+      position: 'fixed', top:0, left:0, width:'100vw', height:'100vh',
+      backgroundColor:'rgba(0,0,0,0.5)', zIndex:9999,
+      display:'flex', alignItems:'center', justifyContent:'center'
+    }}>
+      <div style={{
+        background:'#fff', padding:'2rem', borderRadius:8, textAlign:'center',
+        boxShadow:'0 0 10px rgba(0,0,0,0.3)'
+      }}>
+        <motion.div
+          animate={{ rotate:360 }}
+          transition={{ repeat: Infinity, duration:1, ease:'linear' }}
+          style={{ fontSize:'2rem', marginBottom:'1rem' }}
+        >
+          <FaSpinner />
+        </motion.div>
+        <p style={{ fontSize:'1.1rem' }}>Registrando y enviando atraso a apoderado/a…</p>
+      </div>
+    </div>
+  );
 
   const styles = {
     mainContainer: {
@@ -262,6 +289,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
 
   return (
     <div style={styles.mainContainer}>
+      {isSubmitting && renderBlockingOverlay()}
       <div style={styles.datetimeBox}>
         <div style={styles.iconAndText1}>
           <FaCalendarAlt style={styles.icon} />
@@ -286,6 +314,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
               onChange={(e) => setRutAlumno(formatearRut(e.target.value))}
               placeholder="Ingrese RUT"
               required
+              disabled={isSubmitting}
               style={styles.input}
             />
           </div>
@@ -294,7 +323,7 @@ const AttendanceForm = ({ onSuccess, currentData }) => {
               Alumno: {nombreAlumno} {mostrarJustificativo ? '(Con justificativo)' : '(Sin justificativo)'}
             </p>
           )}
-          <button type="submit" style={styles.button}>
+          <button type="submit" disabled={isSubmitting} style={styles.button}>
             {currentData ? 'Actualizar' : 'Guardar'}
           </button>
         </form>
