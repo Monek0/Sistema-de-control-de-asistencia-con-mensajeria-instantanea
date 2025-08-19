@@ -11,7 +11,7 @@ import ServiceSuspendedPage from './components/ServiceSuspendedPage'; // Ajusta 
 
 function App() {
   // Variable para controlar si el servicio está suspendido
-  const isServiceSuspended = true; // Cambia a false cuando quieras activar el servicio
+  const isServiceSuspended = false; // Cambia a false cuando quieras activar el servicio
 
   // Si el servicio está suspendido, muestra solo la página de suspensión
   if (isServiceSuspended) {
